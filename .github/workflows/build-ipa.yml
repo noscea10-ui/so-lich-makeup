@@ -1,4 +1,4 @@
-name: Build iOS IPA (Unsigned)
+name: Build Kim Ngan Studio IPA
 
 on:
   workflow_dispatch:
@@ -12,52 +12,201 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install XcodeGen
-        run: brew install xcodegen
+      - name: Install Tools (XcodeGen & Pillow)
+        run: |
+          brew install xcodegen
+          pip3 install pillow
 
-      - name: Generate Native iOS Project
+      - name: Prepare Cover Image & App Icon
         run: |
           export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
-          mkdir -p AppSource
-          
+          mkdir -p AppSource/Assets.xcassets/AppIcon.appiconset
+
+          python3 - << 'PYEOF'
+          import os
+          from PIL import Image, ImageFilter
+
+          candidates = [f for f in os.listdir('.') if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+          if candidates:
+              src = 'cover.png' if 'cover.png' in candidates else candidates[0]
+              im = Image.open(src).convert('RGB')
+              w, h = im.size
+              # Xoá vùng logo CapCut ở góc trên bên phải
+              wm_x0 = int(w * 0.68)
+              wm_y1 = int(h * 0.08)
+              patch_box = (max(0, wm_x0 - int(w * 0.25)), 0, wm_x0, wm_y1)
+              patch = im.crop(patch_box).resize((w - wm_x0, wm_y1))
+              patch = patch.filter(ImageFilter.GaussianBlur(radius=6))
+              im.paste(patch, (wm_x0, 0))
+              im.save('AppSource/cover.png', 'PNG')
+
+              # Cắt vuông làm Icon App 1024x1024
+              side = min(w, h)
+              left = (w - side) // 2
+              top = int((h - side) * 0.22)
+              icon = im.crop((left, top, left + side, top + side)).resize((1024, 1024), Image.LANCZOS)
+              icon.save('AppSource/Assets.xcassets/AppIcon.appiconset/icon_1024.png', 'PNG')
+          else:
+              fallback = Image.new('RGB', (1024, 1024), (35, 25, 23))
+              fallback.save('AppSource/cover.png', 'PNG')
+              fallback.save('AppSource/Assets.xcassets/AppIcon.appiconset/icon_1024.png', 'PNG')
+          PYEOF
+
+          cat << 'EOF' > AppSource/Assets.xcassets/AppIcon.appiconset/Contents.json
+          {
+            "images" : [
+              {
+                "filename" : "icon_1024.png",
+                "idiom" : "universal",
+                "platform" : "ios",
+                "size" : "1024x1024"
+              }
+            ],
+            "info" : {
+              "author" : "xcode",
+              "version" : 1
+            }
+          }
+          EOF
+
+      - name: Generate Native iOS Project with Background Lock-Screen Notifications
+        run: |
+          export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
           HTML_FILE=$(find . -maxdepth 1 -name "*.html" | head -n 1)
-          if [ -z "$HTML_FILE" ]; then
-            echo "Khong tim thay file HTML!"
-            exit 1
-          fi
           cp "$HTML_FILE" AppSource/index.html
 
           cat << 'EOF' > AppSource/App.swift
           import SwiftUI
           import WebKit
+          import UserNotifications
 
-          class WebCoordinator: NSObject, WKUIDelegate, WKNavigationDelegate {
-              func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
-                  let alert = UIAlertController(title: "L'Éclat Studio", message: message, preferredStyle: .alert)
-                  alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in completionHandler() })
-                  topViewController()?.present(alert, animated: true)
+          class NotificationBridge: NSObject, WKScriptMessageHandler, UNUserNotificationCenterDelegate {
+              override init() {
+                  super.init()
+                  let center = UNUserNotificationCenter.current()
+                  center.delegate = self
+                  center.requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
               }
 
-              func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (Bool) -> Void) {
-                  let alert = UIAlertController(title: "Xác nhận", message: message, preferredStyle: .alert)
-                  alert.addAction(UIAlertAction(title: "Hủy", style: .cancel) { _ in completionHandler(false) })
-                  alert.addAction(UIAlertAction(title: "Đồng ý", style: .default) { _ in completionHandler(true) })
-                  topViewController()?.present(alert, animated: true)
+              // Hiển thị popup biểu ngữ + âm thanh ngay cả khi đang mở app
+              func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                          willPresent notification: UNNotification,
+                                          withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+                  completionHandler([.banner, .sound, .list])
               }
 
-              private func topViewController() -> UIViewController? {
-                  UIApplication.shared.connectedScenes
-                      .compactMap { $0 as? UIWindowScene }
-                      .flatMap { $0.windows }
-                      .first { $0.isKeyWindow }?
-                      .rootViewController
+              func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                          didReceive response: UNNotificationResponse,
+                                          withCompletionHandler completionHandler: @escaping () -> Void) {
+                  completionHandler()
+              }
+
+              func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+                  guard let dict = message.body as? [String: Any],
+                        let action = dict["action"] as? String else { return }
+
+                  if action == "testNotification" {
+                      scheduleTestBanner()
+                  } else if action == "syncNotifications" {
+                      syncAllAppointments(dict)
+                  }
+              }
+
+              private func scheduleTestBanner() {
+                  let content = UNMutableNotificationContent()
+                  content.title = "⏰ Kim Ngân Studio • Nhắc lịch hẹn"
+                  content.body = "30 phút nữa (09:00): Chị Thảo — Makeup (Khách chị Lan giới thiệu)"
+                  content.sound = .default
+
+                  let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
+                  let req = UNNotificationRequest(identifier: "test-banner-\(UUID().uuidString)", content: content, trigger: trigger)
+                  UNUserNotificationCenter.current().add(req)
+              }
+
+              private func syncAllAppointments(_ dict: [String: Any]) {
+                  let center = UNUserNotificationCenter.current()
+                  center.removeAllPendingNotificationRequests()
+
+                  guard let list = dict["appointments"] as? [[String: Any]] else { return }
+                  let summaryHour = dict["dailySummaryHour"] as? Int ?? 21
+                  let summaryMinute = dict["dailySummaryMinute"] as? Int ?? 0
+                  let remindBefore = dict["remindBeforeMinutes"] as? Int ?? 30
+                  let enableSummary = dict["enableDailySummary"] as? Bool ?? true
+
+                  // Khoá chuẩn POSIX để không bị lỗi trên iPhone dùng đồng hồ 12h (SA/CH)
+                  let posixLocale = Locale(identifier: "en_US_POSIX")
+
+                  let formatter = DateFormatter()
+                  formatter.locale = posixLocale
+                  formatter.dateFormat = "yyyy-MM-dd HH:mm"
+                  formatter.timeZone = TimeZone.current
+
+                  let dayFormatter = DateFormatter()
+                  dayFormatter.locale = posixLocale
+                  dayFormatter.dateFormat = "yyyy-MM-dd"
+                  dayFormatter.timeZone = TimeZone.current
+
+                  let calendar = Calendar.current
+                  let now = Date()
+                  var groupedByDate: [String: [[String: Any]]] = [:]
+
+                  // 1. Lên lịch popup nhắc trước giờ hẹn (mặc định 30 phút)
+                  for item in list {
+                      guard let id = item["id"] as? String,
+                            let dateStr = item["date"] as? String,
+                            let timeStr = item["time"] as? String,
+                            let name = item["customerName"] as? String,
+                            let service = item["service"] as? String else { continue }
+                      let note = item["note"] as? String ?? ""
+
+                      groupedByDate[dateStr, default: []].append(item)
+
+                      if remindBefore > 0,
+                         let aptDate = formatter.date(from: "\(dateStr) \(timeStr)"),
+                         let triggerDate = calendar.date(byAdding: .minute, value: -remindBefore, to: aptDate),
+                         triggerDate > now {
+                          let comps = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: triggerDate)
+                          let content = UNMutableNotificationContent()
+                          content.title = "⏰ \(remindBefore) phút nữa có khách (\(timeStr))"
+                          content.body = "\(name) • \(service)" + (note.isEmpty ? "" : " — \(note)")
+                          content.sound = .default
+
+                          let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
+                          let req = UNNotificationRequest(identifier: "apt-remind-\(id)", content: content, trigger: trigger)
+                          center.add(req)
+                      }
+                  }
+
+                  // 2. Lên lịch popup tổng hợp khách ngày mai vào buổi tối hôm trước
+                  if enableSummary {
+                      for (dateStr, items) in groupedByDate {
+                          guard let targetDay = dayFormatter.date(from: dateStr),
+                                let eveningBefore = calendar.date(byAdding: .day, value: -1, to: targetDay) else { continue }
+
+                          var comps = calendar.dateComponents([.year, .month, .day], from: eveningBefore)
+                          comps.hour = summaryHour
+                          comps.minute = summaryMinute
+
+                          if let fireDate = calendar.date(from: comps), fireDate > now {
+                              let sorted = items.sorted { ($0["time"] as? String ?? "") < ($1["time"] as? String ?? "") }
+                              let lines = sorted.map { "\($0["time"] ?? "") • \($0["customerName"] ?? "") (\($0["service"] ?? ""))" }
+
+                              let content = UNMutableNotificationContent()
+                              content.title = "📅 Ngày mai có \(items.count) khách đặt lịch"
+                              content.body = lines.joined(separator: "\n")
+                              content.sound = .default
+
+                              let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
+                              let req = UNNotificationRequest(identifier: "summary-\(dateStr)", content: content, trigger: trigger)
+                              center.add(req)
+                          }
+                      }
+                  }
               }
           }
 
           struct WebViewContainer: UIViewRepresentable {
-              func makeCoordinator() -> WebCoordinator {
-                  WebCoordinator()
-              }
+              let bridge = NotificationBridge()
 
               func makeUIView(context: Context) -> WKWebView {
                   let config = WKWebViewConfiguration()
@@ -65,18 +214,15 @@ jobs:
                   config.defaultWebpagePreferences.allowsContentJavaScript = true
                   config.websiteDataStore = .default()
                   config.preferences.setValue(true, forKey: "allowFileAccessFromFileURLs")
+                  config.userContentController.add(bridge, name: "iosNotify")
 
                   let webView = WKWebView(frame: .zero, configuration: config)
-                  webView.uiDelegate = context.coordinator
-                  webView.navigationDelegate = context.coordinator
                   webView.scrollView.bounces = false
                   webView.isOpaque = false
-                  webView.backgroundColor = UIColor(red: 0.98, green: 0.96, blue: 0.94, alpha: 1.0)
+                  webView.backgroundColor = UIColor(red: 0.98, green: 0.96, blue: 0.95, alpha: 1.0)
 
                   if let url = Bundle.main.url(forResource: "index", withExtension: "html") {
                       webView.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
-                  } else {
-                      webView.loadHTMLString("<h2 style='padding:40px;font-family:sans-serif'>Không tìm thấy file index.html trong gói ứng dụng</h2>", baseURL: nil)
                   }
                   return webView
               }
@@ -85,12 +231,11 @@ jobs:
           }
 
           @main
-          struct LEclatStudioApp: App {
+          struct KimNganStudioApp: App {
               var body: some Scene {
                   WindowGroup {
                       WebViewContainer()
-                          .ignoresSafeArea(.container, edges: .bottom)
-                          .background(Color(red: 0.98, green: 0.96, blue: 0.94).ignoresSafeArea())
+                          .ignoresSafeArea(.all)
                           .preferredColorScheme(.light)
                   }
               }
@@ -98,21 +243,22 @@ jobs:
           EOF
 
           cat << 'EOF' > project.yml
-          name: LEclatStudio
+          name: KimNganStudio
           options:
             bundleIdPrefix: com.kent
             deploymentTarget:
               iOS: "15.0"
           targets:
-            LEclatStudio:
+            KimNganStudio:
               type: application
               platform: iOS
               sources:
                 - path: AppSource
               settings:
                 base:
-                  PRODUCT_BUNDLE_IDENTIFIER: com.kent.leclatstudio
-                  INFOPLIST_KEY_CFBundleDisplayName: "LEclat Studio"
+                  PRODUCT_BUNDLE_IDENTIFIER: com.kent.kimnganstudio
+                  INFOPLIST_KEY_CFBundleDisplayName: "Kim Ngân Studio"
+                  ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
                   INFOPLIST_KEY_UIStatusBarStyle: UIStatusBarStyleDarkContent
                   INFOPLIST_KEY_UILaunchScreen_Generation: YES
                   INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
@@ -128,8 +274,8 @@ jobs:
 
       - name: Build Unsigned .app via Xcode
         run: |
-          xcodebuild -project LEclatStudio.xcodeproj \
-            -scheme LEclatStudio \
+          xcodebuild -project KimNganStudio.xcodeproj \
+            -scheme KimNganStudio \
             -configuration Release \
             -sdk iphoneos \
             -derivedDataPath build \
@@ -142,16 +288,12 @@ jobs:
       - name: Package .app into .ipa
         run: |
           mkdir -p Payload
-          APP_PATH=$(find build -name "LEclatStudio.app" -type d | head -n 1)
-          if [ ! -f "$APP_PATH/index.html" ]; then
-            echo "LOI: index.html chua duoc dong goi vao trong .app!"
-            exit 1
-          fi
+          APP_PATH=$(find build -name "KimNganStudio.app" -type d | head -n 1)
           cp -r "$APP_PATH" Payload/
-          zip -r LEclat-Studio-Unsigned.ipa Payload
+          zip -r KimNganStudio-Unsigned.ipa Payload
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: LEclat-Studio-IPA
-          path: LEclat-Studio-Unsigned.ipa
+          name: KimNganStudio-IPA
+          path: KimNganStudio-Unsigned.ipa
