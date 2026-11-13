@@ -77,15 +77,1420 @@ jobs:
           swift make_assets.swift
           echo '{"info":{"author":"xcode","version":1}}' > Assets.xcassets/Contents.json
           echo '{"images":[{"filename":"icon_1024.png","idiom":"universal","platform":"ios","size":"1024x1024"}],"info":{"author":"xcode","version":1}}' > Assets.xcassets/AppIcon.appiconset/Contents.json
-      - name: Generate Native iOS Project
+      - name: Generate New UI and Native Notification Engine
         run: |
           export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
-          HTML_FILE=$(find . -maxdepth 1 -name "*.html" | head -n 1)
-          if [ -z "$HTML_FILE" ]; then
-            echo "Khong tim thay file index.html!"
-            exit 1
-          fi
-          cp "$HTML_FILE" AppSource/index.html
+          cat << 'HTMLEOF' > AppSource/index.html
+          <!DOCTYPE html>
+          <html lang="vi">
+          <head>
+            <meta charset="UTF-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+            <title>Kim Ngân Studio</title>
+            <link rel="preconnect" href="https://fonts.googleapis.com">
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+            <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+            <style>
+              :root {
+                --bg-cream: #FAF5F2;
+                --bg-card: #FFFFFF;
+                --bg-subtle: #F3EAE4;
+                --espresso: #231917;
+                --espresso-soft: #5C4742;
+                --rose: #C86D77;
+                --rose-light: #F9E8EA;
+                --gold: #B88A44;
+                --gold-light: #FBF3E4;
+                --border: #E8DDD6;
+                --text-muted: #8C7A75;
+                --nav-bg: rgba(255, 255, 255, 0.94);
+                --shadow-card: 0 6px 20px rgba(35, 25, 23, 0.05);
+                --safe-top: env(safe-area-inset-top, 44px);
+                --safe-bottom: env(safe-area-inset-bottom, 24px);
+              }
+              body.dark-mode {
+                --bg-cream: #110D0C;
+                --bg-card: #1B1514;
+                --bg-subtle: #271E1C;
+                --espresso: #F7F0EB;
+                --espresso-soft: #D0C0BA;
+                --rose: #E58A94;
+                --rose-light: rgba(229, 138, 148, 0.18);
+                --gold: #E6BC72;
+                --gold-light: rgba(230, 188, 114, 0.16);
+                --border: #322623;
+                --text-muted: #9E8C86;
+                --nav-bg: rgba(22, 17, 16, 0.94);
+                --shadow-card: 0 8px 26px rgba(0, 0, 0, 0.45);
+              }
+              * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+              body {
+                font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+                background-color: var(--bg-cream);
+                color: var(--espresso);
+                min-height: 100vh;
+                overflow-x: hidden;
+                padding-bottom: calc(90px + var(--safe-bottom));
+                transition: background-color 0.28s ease, color 0.28s ease;
+              }
+              @keyframes kenBurns {
+                0% { transform: scale(1); }
+                100% { transform: scale(1.09); }
+              }
+              @keyframes spinSlow {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+              @keyframes spinReverse {
+                0% { transform: rotate(360deg); }
+                100% { transform: rotate(0deg); }
+              }
+              @keyframes floatUp {
+                0% { opacity: 0; transform: translateY(22px) scale(0.96); }
+                100% { opacity: 1; transform: translateY(0) scale(1); }
+              }
+              @keyframes pulseGlow {
+                0%, 100% { filter: drop-shadow(0 0 8px rgba(238, 198, 128, 0.45)); transform: scale(1); }
+                50% { filter: drop-shadow(0 0 18px rgba(238, 198, 128, 0.85)); transform: scale(1.03); }
+              }
+              @keyframes sparkleFloat {
+                0% { transform: translateY(0) scale(0.6); opacity: 0; }
+                50% { opacity: 0.9; }
+                100% { transform: translateY(-90px) scale(1.2); opacity: 0; }
+              }
+              @keyframes shimmerSweep {
+                0% { left: -100%; }
+                60% { left: 140%; }
+                100% { left: 140%; }
+              }
+              #cover-screen {
+                position: fixed;
+                inset: 0;
+                z-index: 9999;
+                background: radial-gradient(circle at 50% 25%, #5C3A3E 0%, #1F1412 65%, #0E0908 100%);
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                overflow: hidden;
+                transition: opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1), transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+              }
+              #cover-screen.hidden {
+                opacity: 0;
+                pointer-events: none;
+                transform: scale(1.06);
+              }
+              #cover-img {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                object-position: center top;
+                animation: kenBurns 12s ease-in-out infinite alternate;
+              }
+              .cover-gradient {
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(to bottom, rgba(16, 10, 9, 0.55) 0%, rgba(16, 10, 9, 0.22) 38%, rgba(16, 10, 9, 0.86) 76%, rgba(12, 7, 6, 0.98) 100%);
+              }
+              .sparkle-layer {
+                position: absolute;
+                inset: 0;
+                pointer-events: none;
+                z-index: 1;
+              }
+              .sp-dot {
+                position: absolute;
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                background: radial-gradient(circle, #FFF7E0 0%, #E6B86A 70%, transparent 100%);
+                animation: sparkleFloat 4.2s ease-in-out infinite;
+              }
+              .cover-top-crest {
+                position: relative;
+                z-index: 2;
+                padding-top: calc(18px + var(--safe-top));
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                animation: floatUp 0.75s ease-out both;
+              }
+              .bespoke-logo-box {
+                position: relative;
+                width: 122px;
+                height: 122px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                animation: pulseGlow 3.6s ease-in-out infinite;
+              }
+              .ring-spin-1 {
+                position: absolute;
+                inset: 0;
+                border-radius: 50%;
+                border: 1.5px dashed rgba(243, 209, 155, 0.75);
+                animation: spinSlow 24s linear infinite;
+              }
+              .ring-spin-2 {
+                position: absolute;
+                inset: 8px;
+                border-radius: 50%;
+                border: 1px solid rgba(243, 209, 155, 0.35);
+                animation: spinReverse 16s linear infinite;
+              }
+              .cover-content {
+                position: relative;
+                z-index: 2;
+                padding: 20px 20px calc(30px + var(--safe-bottom));
+                color: #FFF;
+                text-align: center;
+                animation: floatUp 0.85s ease-out 0.15s both;
+              }
+              .cover-glass-box {
+                background: rgba(22, 14, 13, 0.66);
+                backdrop-filter: blur(18px);
+                -webkit-backdrop-filter: blur(18px);
+                border: 1px solid rgba(243, 209, 155, 0.32);
+                border-radius: 26px;
+                padding: 22px 18px;
+                box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
+              }
+              .cover-badge {
+                display: inline-block;
+                padding: 5px 14px;
+                border-radius: 999px;
+                background: rgba(230, 188, 114, 0.2);
+                border: 1px solid rgba(243, 209, 155, 0.45);
+                color: #F6D8A6;
+                font-size: 11px;
+                font-weight: 700;
+                letter-spacing: 1px;
+                text-transform: uppercase;
+                margin-bottom: 8px;
+              }
+              .cover-title {
+                font-family: 'Playfair Display', serif;
+                font-size: 31px;
+                font-weight: 700;
+                letter-spacing: 0.5px;
+                margin-bottom: 6px;
+                background: linear-gradient(90deg, #FFFDF9, #F5D59B, #FFFDF9);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+              }
+              .cover-summary {
+                font-size: 13.5px;
+                color: rgba(255, 255, 255, 0.88);
+                margin-bottom: 18px;
+                line-height: 1.5;
+              }
+              .btn-enter {
+                position: relative;
+                overflow: hidden;
+                width: 100%;
+                padding: 15px;
+                border: none;
+                border-radius: 16px;
+                background: linear-gradient(135deg, #F0C987 0%, #C68E3F 100%);
+                color: #1B110F;
+                font-size: 15.5px;
+                font-weight: 700;
+                cursor: pointer;
+                box-shadow: 0 10px 26px rgba(198, 142, 63, 0.42);
+              }
+              .btn-enter::after {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 55%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+                transform: skewX(-22deg);
+                animation: shimmerSweep 3.2s infinite;
+              }
+              #toast-banner {
+                position: fixed;
+                top: calc(10px + var(--safe-top));
+                left: 16px;
+                right: 16px;
+                z-index: 9500;
+                background: linear-gradient(135deg, #231917 0%, #3E2A27 100%);
+                color: #F6D8A6;
+                border: 1px solid rgba(243, 209, 155, 0.45);
+                padding: 13px 16px;
+                border-radius: 16px;
+                font-size: 13px;
+                font-weight: 700;
+                box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+                transform: translateY(-140%);
+                opacity: 0;
+                transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+                pointer-events: none;
+                text-align: center;
+              }
+              #toast-banner.show {
+                transform: translateY(0);
+                opacity: 1;
+              }
+              .app-header {
+                padding: calc(12px + var(--safe-top)) 16px 12px;
+                background: var(--bg-cream);
+                position: sticky;
+                top: 0;
+                z-index: 50;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                border-bottom: 1px solid var(--border);
+              }
+              .brand-row {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+              }
+              .header-logo-svg {
+                width: 40px;
+                height: 40px;
+                flex-shrink: 0;
+              }
+              .brand-title {
+                font-family: 'Playfair Display', serif;
+                font-size: 19px;
+                font-weight: 700;
+                color: var(--espresso);
+                line-height: 1.15;
+              }
+              .brand-sub {
+                font-size: 11px;
+                color: var(--text-muted);
+                margin-top: 2px;
+              }
+              .header-actions {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+              }
+              .theme-pill-btn {
+                padding: 7px 11px;
+                border-radius: 12px;
+                border: 1px solid var(--border);
+                background: var(--bg-card);
+                color: var(--espresso);
+                font-size: 12px;
+                font-weight: 700;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                cursor: pointer;
+              }
+              .icon-btn {
+                width: 36px;
+                height: 36px;
+                border-radius: 12px;
+                border: 1px solid var(--border);
+                background: var(--bg-card);
+                color: var(--espresso);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 15px;
+                cursor: pointer;
+              }
+              .container {
+                padding: 15px 15px 24px;
+                max-width: 540px;
+                margin: 0 auto;
+              }
+              .tab-panel { display: none; }
+              .tab-panel.active { display: block; animation: floatUp 0.25s ease-out; }
+              .calendar-card {
+                background: var(--bg-card);
+                border-radius: 22px;
+                padding: 15px;
+                border: 1px solid var(--border);
+                box-shadow: var(--shadow-card);
+                margin-bottom: 18px;
+              }
+              .cal-nav {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 14px;
+              }
+              .cal-month-label {
+                font-family: 'Playfair Display', serif;
+                font-size: 18px;
+                font-weight: 700;
+              }
+              .cal-nav-group { display: flex; gap: 6px; }
+              .cal-btn {
+                padding: 6px 11px;
+                border-radius: 10px;
+                border: 1px solid var(--border);
+                background: var(--bg-subtle);
+                color: var(--espresso);
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
+              }
+              .weekdays {
+                display: grid;
+                grid-template-columns: repeat(7, 1fr);
+                text-align: center;
+                font-size: 11px;
+                font-weight: 700;
+                color: var(--text-muted);
+                margin-bottom: 8px;
+              }
+              .days-grid {
+                display: grid;
+                grid-template-columns: repeat(7, 1fr);
+                gap: 5px;
+              }
+              .day-cell {
+                min-height: 58px;
+                border-radius: 12px;
+                border: 1px solid transparent;
+                background: var(--bg-subtle);
+                padding: 5px 3px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                cursor: pointer;
+              }
+              .day-cell.empty { background: transparent; cursor: default; }
+              .day-cell.today { border-color: var(--rose); }
+              .day-cell.selected {
+                background: var(--espresso);
+                color: var(--bg-cream);
+                border-color: var(--espresso);
+              }
+              .day-num { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+              .day-pills {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+                width: 100%;
+                align-items: center;
+              }
+              .mini-time {
+                font-size: 9.5px;
+                font-weight: 700;
+                padding: 1px 4px;
+                border-radius: 5px;
+                width: 92%;
+                text-align: center;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              }
+              .mini-time.makeup { background: var(--rose-light); color: var(--rose); }
+              .mini-time.nail { background: var(--gold-light); color: var(--gold); }
+              .day-cell.selected .mini-time.makeup { background: var(--rose); color: #FFF; }
+              .day-cell.selected .mini-time.nail { background: var(--gold); color: #1A1210; }
+              .more-badge { font-size: 9px; font-weight: 700; color: var(--text-muted); }
+              .day-cell.selected .more-badge { color: var(--gold); }
+              .section-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 12px;
+              }
+              .section-title { font-size: 15.5px; font-weight: 700; }
+              .count-pill {
+                font-size: 12px;
+                font-weight: 700;
+                padding: 4px 10px;
+                border-radius: 999px;
+                background: var(--rose-light);
+                color: var(--rose);
+              }
+              .apt-card {
+                background: var(--bg-card);
+                border-radius: 18px;
+                padding: 14px 15px;
+                border: 1px solid var(--border);
+                margin-bottom: 10px;
+                box-shadow: var(--shadow-card);
+              }
+              .apt-top {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 9px;
+                gap: 6px;
+                flex-wrap: wrap;
+              }
+              .time-badge {
+                font-size: 13.5px;
+                font-weight: 700;
+                color: var(--espresso);
+                background: var(--bg-subtle);
+                padding: 5px 10px;
+                border-radius: 10px;
+                border: 1px solid var(--border);
+              }
+              .live-badge {
+                font-size: 11px;
+                font-weight: 700;
+                padding: 3px 8px;
+                border-radius: 7px;
+                background: var(--gold-light);
+                color: var(--gold);
+              }
+              .service-tag {
+                font-size: 12px;
+                font-weight: 700;
+                padding: 4px 10px;
+                border-radius: 8px;
+              }
+              .service-tag.makeup { background: var(--rose-light); color: var(--rose); }
+              .service-tag.nail { background: var(--gold-light); color: var(--gold); }
+              .service-tag.combo { background: rgba(155, 114, 207, 0.18); color: #9B72CF; }
+              .apt-body { display: flex; gap: 12px; align-items: flex-start; }
+              .apt-photo {
+                width: 58px;
+                height: 58px;
+                border-radius: 14px;
+                object-fit: cover;
+                border: 1px solid var(--border);
+                flex-shrink: 0;
+              }
+              .apt-info { flex: 1; min-width: 0; }
+              .customer-name { font-size: 16px; font-weight: 700; margin-bottom: 4px; color: var(--espresso); }
+              .apt-note {
+                font-size: 13px;
+                color: var(--espresso-soft);
+                line-height: 1.45;
+                background: var(--bg-subtle);
+                padding: 7px 10px;
+                border-radius: 10px;
+                margin-top: 4px;
+              }
+              .alarm-info-row {
+                font-size: 11.5px;
+                color: var(--gold);
+                font-weight: 600;
+                margin-top: 6px;
+              }
+              .apt-actions {
+                display: flex;
+                justify-content: flex-end;
+                gap: 8px;
+                margin-top: 10px;
+                padding-top: 8px;
+                border-top: 1px dashed var(--border);
+              }
+              .btn-mini {
+                padding: 5px 11px;
+                border-radius: 8px;
+                border: 1px solid var(--border);
+                background: var(--bg-subtle);
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--espresso-soft);
+                cursor: pointer;
+              }
+              .btn-mini.danger {
+                color: #E05252;
+                border-color: rgba(224, 82, 82, 0.3);
+                background: rgba(224, 82, 82, 0.08);
+              }
+              .gap-indicator {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 11px;
+                font-weight: 600;
+                color: var(--text-muted);
+                margin: -3px 0 7px;
+              }
+              .gap-indicator.warn {
+                color: #E05252;
+                background: rgba(224, 82, 82, 0.12);
+                padding: 5px 10px;
+                border-radius: 9px;
+                margin: 2px 0 8px;
+              }
+              .search-box {
+                width: 100%;
+                padding: 12px 14px;
+                border-radius: 14px;
+                border: 1px solid var(--border);
+                background: var(--bg-card);
+                color: var(--espresso);
+                font-size: 14px;
+                margin-bottom: 10px;
+                outline: none;
+              }
+              .filter-row {
+                display: flex;
+                gap: 6px;
+                overflow-x: auto;
+                padding-bottom: 8px;
+                margin-bottom: 10px;
+              }
+              .filter-chip {
+                padding: 7px 13px;
+                border-radius: 999px;
+                border: 1px solid var(--border);
+                background: var(--bg-card);
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--espresso-soft);
+                white-space: nowrap;
+                cursor: pointer;
+              }
+              .filter-chip.active {
+                background: var(--espresso);
+                color: var(--bg-cream);
+                border-color: var(--espresso);
+              }
+              .date-group-label {
+                font-size: 13px;
+                font-weight: 700;
+                color: var(--rose);
+                margin: 14px 0 8px;
+              }
+              .status-banner {
+                background: var(--gold-light);
+                border: 1px solid rgba(224, 182, 110, 0.4);
+                border-radius: 16px;
+                padding: 12px 14px;
+                margin-bottom: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                font-size: 13px;
+                font-weight: 700;
+                color: var(--espresso);
+              }
+              .setting-card {
+                background: var(--bg-card);
+                border-radius: 18px;
+                padding: 16px;
+                border: 1px solid var(--border);
+                margin-bottom: 12px;
+                box-shadow: var(--shadow-card);
+              }
+              .setting-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+              }
+              .setting-title { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+              .setting-desc { font-size: 12.5px; color: var(--text-muted); line-height: 1.4; }
+              select.styled-select, input[type="time"].styled-input {
+                padding: 8px 10px;
+                border-radius: 10px;
+                border: 1px solid var(--border);
+                background: var(--bg-subtle);
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--espresso);
+              }
+              .btn-primary-full {
+                width: 100%;
+                padding: 14px;
+                border-radius: 14px;
+                border: none;
+                background: var(--espresso);
+                color: var(--bg-cream);
+                font-size: 14px;
+                font-weight: 700;
+                cursor: pointer;
+                margin-top: 6px;
+              }
+              .bottom-nav {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: var(--nav-bg);
+                backdrop-filter: blur(14px);
+                -webkit-backdrop-filter: blur(14px);
+                border-top: 1px solid var(--border);
+                display: flex;
+                align-items: center;
+                justify-content: space-around;
+                padding: 8px 12px calc(8px + var(--safe-bottom));
+                z-index: 80;
+              }
+              .nav-item {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 3px;
+                border: none;
+                background: none;
+                color: var(--text-muted);
+                font-size: 11px;
+                font-weight: 600;
+                cursor: pointer;
+              }
+              .nav-item.active { color: var(--espresso); font-weight: 700; }
+              .nav-icon { font-size: 19px; }
+              .fab-add {
+                width: 52px;
+                height: 52px;
+                border-radius: 18px;
+                border: none;
+                background: linear-gradient(135deg, #D9737E 0%, #A94B56 100%);
+                color: #FFF;
+                font-size: 26px;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 8px 18px rgba(200, 109, 119, 0.4);
+                cursor: pointer;
+                margin-top: -18px;
+              }
+              .modal-backdrop {
+                position: fixed;
+                inset: 0;
+                background: rgba(12, 8, 8, 0.68);
+                z-index: 200;
+                display: none;
+                align-items: flex-end;
+                justify-content: center;
+              }
+              .modal-backdrop.open { display: flex; }
+              .modal-sheet {
+                background: var(--bg-card);
+                color: var(--espresso);
+                width: 100%;
+                max-width: 540px;
+                border-radius: 24px 24px 0 0;
+                padding: 20px 20px calc(24px + var(--safe-bottom));
+                max-height: 92vh;
+                overflow-y: auto;
+                border-top: 1px solid var(--border);
+              }
+              .modal-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 14px;
+              }
+              .modal-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; }
+              .form-group { margin-bottom: 12px; }
+              .form-label { display: block; font-size: 12.5px; font-weight: 700; margin-bottom: 5px; color: var(--espresso-soft); }
+              .form-control {
+                width: 100%;
+                padding: 11px 12px;
+                border-radius: 12px;
+                border: 1px solid var(--border);
+                background: var(--bg-subtle);
+                font-size: 14px;
+                font-family: inherit;
+                color: var(--espresso);
+              }
+              .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+              .quick-times { display: flex; gap: 6px; overflow-x: auto; padding-top: 6px; }
+              .q-time-btn {
+                padding: 5px 9px;
+                border-radius: 8px;
+                border: 1px solid var(--border);
+                background: var(--bg-subtle);
+                color: var(--espresso-soft);
+                font-size: 11.5px;
+                font-weight: 700;
+                cursor: pointer;
+                white-space: nowrap;
+              }
+              .overlap-alert {
+                display: none;
+                margin-top: 6px;
+                padding: 8px 10px;
+                border-radius: 10px;
+                background: rgba(224, 82, 82, 0.14);
+                color: #E05252;
+                font-size: 12px;
+                font-weight: 600;
+              }
+              .service-selector { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+              .srv-opt {
+                padding: 10px 6px;
+                border-radius: 12px;
+                border: 1px solid var(--border);
+                background: var(--bg-subtle);
+                text-align: center;
+                font-size: 13px;
+                font-weight: 700;
+                cursor: pointer;
+              }
+              .srv-opt.selected { background: var(--espresso); color: var(--bg-cream); border-color: var(--espresso); }
+              .empty-state {
+                text-align: center;
+                padding: 36px 16px;
+                color: var(--text-muted);
+                font-size: 14px;
+                background: var(--bg-card);
+                border-radius: 18px;
+                border: 1px dashed var(--border);
+              }
+            </style>
+          </head>
+          <body>
+            <div id="toast-banner">🔔 Đã đồng bộ lịch báo chuông!</div>
+            <div id="cover-screen">
+              <img id="cover-img" src="./cover.png" alt="Kim Ngân Studio" onerror="this.style.display='none'" />
+              <div class="cover-gradient"></div>
+              <div class="sparkle-layer">
+                <div class="sp-dot" style="left:18%;bottom:22%;animation-delay:0s;"></div>
+                <div class="sp-dot" style="left:46%;bottom:30%;animation-delay:1.1s;"></div>
+                <div class="sp-dot" style="left:78%;bottom:24%;animation-delay:2.2s;"></div>
+                <div class="sp-dot" style="left:32%;bottom:48%;animation-delay:0.6s;"></div>
+                <div class="sp-dot" style="left:68%;bottom:52%;animation-delay:1.7s;"></div>
+              </div>
+              <div class="cover-top-crest">
+                <div class="bespoke-logo-box">
+                  <div class="ring-spin-1"></div>
+                  <div class="ring-spin-2"></div>
+                  <svg width="96" height="96" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                      <linearGradient id="goldGrad" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#FFF2CC"/>
+                        <stop offset="50%" stop-color="#D8A456"/>
+                        <stop offset="100%" stop-color="#F7DFAC"/>
+                      </linearGradient>
+                    </defs>
+                    <circle cx="60" cy="60" r="50" fill="rgba(20,12,11,0.72)" stroke="url(#goldGrad)" stroke-width="2"/>
+                    <path d="M60 17 L64 26 L73 26 L66 31 L69 40 L60 35 L51 40 L54 31 L47 26 L56 26 Z" fill="url(#goldGrad)" opacity="0.9"/>
+                    <text x="60" y="68" text-anchor="middle" fill="url(#goldGrad)" font-family="Playfair Display, serif" font-size="30" font-weight="700" letter-spacing="1.5">KN</text>
+                    <text x="60" y="85" text-anchor="middle" fill="#F6D8A6" font-family="Plus Jakarta Sans, sans-serif" font-size="7.5" font-weight="700" letter-spacing="2.2">MAKEUP &amp; NAIL</text>
+                    <path d="M36 93 Q60 101 84 93" stroke="url(#goldGrad)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+                  </svg>
+                </div>
+              </div>
+              <div class="cover-content">
+                <div class="cover-glass-box">
+                  <div class="cover-badge">✨ Luxury Beauty &amp; Nail Art ✨</div>
+                  <h1 class="cover-title">Kim Ngân Studio</h1>
+                  <p class="cover-summary" id="cover-today-summary">Đang kiểm tra lịch hẹn hôm nay...</p>
+                  <button class="btn-enter" onclick="closeCover()">✨ Mở Sổ Lịch Kim Ngân</button>
+                </div>
+              </div>
+            </div>
+            <header class="app-header">
+              <div class="brand-row">
+                <svg class="header-logo-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="100" height="100" rx="24" fill="#231917"/>
+                  <rect x="3" y="3" width="94" height="94" rx="21" stroke="#D8A456" stroke-width="2" stroke-opacity="0.7"/>
+                  <path d="M50 14 L53 21 L60 21 L54 25 L56 32 L50 28 L44 32 L46 25 L40 21 L47 21 Z" fill="#E8BE76"/>
+                  <text x="50" y="62" text-anchor="middle" fill="#F5D59B" font-family="Playfair Display, serif" font-size="32" font-weight="700">KN</text>
+                  <text x="50" y="81" text-anchor="middle" fill="#D8A456" font-family="Plus Jakarta Sans, sans-serif" font-size="9" font-weight="700" letter-spacing="1.5">STUDIO</text>
+                </svg>
+                <div>
+                  <div class="brand-title">Kim Ngân Studio</div>
+                  <div class="brand-sub" id="header-date-sub">Hôm nay</div>
+                </div>
+              </div>
+              <div class="header-actions">
+                <button class="theme-pill-btn" id="theme-toggle-btn" onclick="toggleTheme()">🌙 Nền tối</button>
+                <button class="icon-btn" title="Xem ảnh bìa" onclick="openCover()">🖼️</button>
+              </div>
+            </header>
+            <main class="container">
+              <section id="tab-calendar" class="tab-panel active">
+                <div class="calendar-card">
+                  <div class="cal-nav">
+                    <div class="cal-month-label" id="cal-month-label">Tháng 11, 2026</div>
+                    <div class="cal-nav-group">
+                      <button class="cal-btn" onclick="changeMonth(-1)">‹</button>
+                      <button class="cal-btn" onclick="goToday()">Hôm nay</button>
+                      <button class="cal-btn" onclick="changeMonth(1)">›</button>
+                    </div>
+                  </div>
+                  <div class="weekdays">
+                    <div>T2</div><div>T3</div><div>T4</div><div>T5</div><div>T6</div><div>T7</div><div>CN</div>
+                  </div>
+                  <div class="days-grid" id="days-grid"></div>
+                </div>
+                <div class="section-header">
+                  <div class="section-title" id="selected-day-title">Lịch ngày đang chọn</div>
+                  <div class="count-pill" id="selected-day-count">0 khách</div>
+                </div>
+                <div id="day-appointments-list"></div>
+              </section>
+              <section id="tab-all" class="tab-panel">
+                <input type="text" id="search-input" class="search-box" placeholder="Tìm tên khách hoặc ghi chú..." oninput="renderAllList()" />
+                <div class="filter-row">
+                  <button class="filter-chip active" data-filter="upcoming" onclick="setFilter('upcoming', this)">Sắp tới &amp; Hôm nay</button>
+                  <button class="filter-chip" data-filter="all" onclick="setFilter('all', this)">Tất cả</button>
+                  <button class="filter-chip" data-filter="Makeup" onclick="setFilter('Makeup', this)">Makeup</button>
+                  <button class="filter-chip" data-filter="Nail" onclick="setFilter('Nail', this)">Nail</button>
+                  <button class="filter-chip" data-filter="past" onclick="setFilter('past', this)">Đã qua</button>
+                </div>
+                <div id="all-appointments-list"></div>
+              </section>
+              <section id="tab-notify" class="tab-panel">
+                <div class="status-banner">
+                  <span>📲 Chuông báo màn hình khoá iPhone</span>
+                  <span id="ios-pending-badge">Đang hoạt động</span>
+                </div>
+                <div class="setting-card">
+                  <div class="setting-row">
+                    <div>
+                      <div class="setting-title">🔔 Báo đúng giờ hẹn (VD: 19:20 báo 19:20)</div>
+                      <div class="setting-desc">Tự bật popup kèm chuông ngay khi tới đúng giờ làm</div>
+                    </div>
+                    <input type="checkbox" id="enable-exact" checked onchange="saveSettings()" style="width:22px;height:22px;accent-color:#C86D77;" />
+                  </div>
+                </div>
+                <div class="setting-card">
+                  <div class="setting-row">
+                    <div>
+                      <div class="setting-title">⏳ Nhắc trước giờ khách đến</div>
+                      <div class="setting-desc">Báo trước để chuẩn bị đồ nghề</div>
+                    </div>
+                    <select id="remind-minutes" class="styled-select" onchange="saveSettings()">
+                      <option value="0">Tắt</option>
+                      <option value="15">Trước 15 phút</option>
+                      <option value="30" selected>Trước 30 phút</option>
+                      <option value="45">Trước 45 phút</option>
+                      <option value="60">Trước 60 phút</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="setting-card">
+                  <div class="setting-row" style="margin-bottom: 12px;">
+                    <div>
+                      <div class="setting-title">📅 Báo tổng khách ngày mai</div>
+                      <div class="setting-desc">Nhắc danh sách khách đặt lịch vào buổi tối hôm trước</div>
+                    </div>
+                    <input type="checkbox" id="enable-summary" checked onchange="saveSettings()" style="width:22px;height:22px;accent-color:#C86D77;" />
+                  </div>
+                  <div class="setting-row">
+                    <div class="setting-desc">Giờ báo tổng buổi tối</div>
+                    <input type="time" id="summary-time" class="styled-input" value="21:00" onchange="saveSettings()" />
+                  </div>
+                </div>
+                <div class="setting-card">
+                  <div class="setting-row">
+                    <div>
+                      <div class="setting-title">🌙 Chế độ Nền Tối (Dark Mode)</div>
+                      <div class="setting-desc">Giao diện nền đen ánh kim dịu mắt ban đêm</div>
+                    </div>
+                    <input type="checkbox" id="dark-mode-checkbox" onchange="toggleTheme(this.checked)" style="width:22px;height:22px;accent-color:#C86D77;" />
+                  </div>
+                </div>
+                <div class="setting-card">
+                  <div class="setting-title">Kiểm tra chuông báo màn hình khoá</div>
+                  <div class="setting-desc" style="margin-bottom: 10px;">Bấm nút dưới đây rồi khoá màn hình iPhone lại ngay, sau 5 giây popup sẽ đổ chuông.</div>
+                  <button class="btn-primary-full" onclick="sendTestNotification()">🔔 Test thông báo màn hình khoá (5 giây)</button>
+                </div>
+              </section>
+            </main>
+            <nav class="bottom-nav">
+              <button class="nav-item active" onclick="switchTab('calendar', this)">
+                <span class="nav-icon">📅</span>
+                <span>Lịch tháng</span>
+              </button>
+              <button class="fab-add" onclick="openModal()" title="Thêm lịch mới">+</button>
+              <button class="nav-item" onclick="switchTab('all', this)">
+                <span class="nav-icon">📋</span>
+                <span>Tổng lịch đặt</span>
+              </button>
+              <button class="nav-item" onclick="switchTab('notify', this)">
+                <span class="nav-icon">🔔</span>
+                <span>Thông báo</span>
+              </button>
+            </nav>
+            <div class="modal-backdrop" id="apt-modal">
+              <div class="modal-sheet">
+                <div class="modal-header">
+                  <div class="modal-title" id="modal-title">Thêm Lịch Đặt Mới</div>
+                  <button class="icon-btn" onclick="closeModal()">✕</button>
+                </div>
+                <input type="hidden" id="edit-id" />
+                <div class="form-group">
+                  <label class="form-label">Tên khách hàng *</label>
+                  <input type="text" id="inp-name" class="form-control" placeholder="VD: Chị Thảo (Em chị Lan)" />
+                </div>
+                <div class="form-row-2">
+                  <div class="form-group">
+                    <label class="form-label">Ngày đặt *</label>
+                    <input type="date" id="inp-date" class="form-control" onchange="checkOverlapWarning()" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Giờ hẹn *</label>
+                    <input type="time" id="inp-time" class="form-control" value="09:00" onchange="checkOverlapWarning()" />
+                  </div>
+                </div>
+                <div class="form-group" style="margin-top:-6px;">
+                  <div class="quick-times">
+                    <button type="button" class="q-time-btn" onclick="setQuickTime('08:00')">08:00</button>
+                    <button type="button" class="q-time-btn" onclick="setQuickTime('09:30')">09:30</button>
+                    <button type="button" class="q-time-btn" onclick="setQuickTime('11:00')">11:00</button>
+                    <button type="button" class="q-time-btn" onclick="setQuickTime('13:30')">13:30</button>
+                    <button type="button" class="q-time-btn" onclick="setQuickTime('15:30')">15:30</button>
+                    <button type="button" class="q-time-btn" onclick="setQuickTime('17:30')">17:30</button>
+                    <button type="button" class="q-time-btn" onclick="setQuickTime('19:30')">19:30</button>
+                  </div>
+                  <div class="overlap-alert" id="overlap-alert"></div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Khách làm gì?</label>
+                  <div class="service-selector">
+                    <div class="srv-opt selected" data-srv="Makeup" onclick="selectService('Makeup', this)">💄 Makeup</div>
+                    <div class="srv-opt" data-srv="Nail" onclick="selectService('Nail', this)">💅 Nail</div>
+                    <div class="srv-opt" data-srv="Makeup & Nail" onclick="selectService('Makeup & Nail', this)">✨ Cả hai</div>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Ghi chú thêm (Đặc điểm nhận dạng, mẫu, địa điểm...)</label>
+                  <textarea id="inp-note" class="form-control" rows="2" placeholder="VD: Khách quen giới thiệu, makeup đi tiệc tone cam đào..."></textarea>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Ảnh khách / Ảnh mẫu (Không bắt buộc)</label>
+                  <input type="file" id="inp-photo" accept="image/*" class="form-control" onchange="handlePhotoUpload(event)" />
+                  <img id="photo-preview" style="display:none; width:72px; height:72px; object-fit:cover; border-radius:12px; margin-top:8px;" />
+                </div>
+                <button class="btn-primary-full" onclick="saveAppointment()">Lưu Lịch &amp; Đặt Chuông Báo</button>
+              </div>
+            </div>
+            <script>
+              const STORAGE_KEY = 'kimngan_studio_appointments_v1';
+              const SETTINGS_KEY = 'kimngan_studio_settings_v1';
+              const THEME_KEY = 'kimngan_studio_theme_v1';
+              let appointments = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+              let settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"enableExactTime":true,"remindBeforeMinutes":30,"enableDailySummary":true,"summaryTime":"21:00"}');
+              if (typeof settings.enableExactTime === 'undefined') settings.enableExactTime = true;
+              let isDark = localStorage.getItem(THEME_KEY) === 'dark';
+              let currentFilter = 'upcoming';
+              let selectedService = 'Makeup';
+              let currentPhotoBase64 = '';
+              let firedInAppIds = {};
+              const nowObj = new Date();
+              let viewYear = nowObj.getFullYear();
+              let viewMonth = nowObj.getMonth();
+              let selectedDateStr = toDateStr(nowObj);
+              function showToast(msg) {
+                const t = document.getElementById('toast-banner');
+                t.textContent = msg;
+                t.classList.add('show');
+                setTimeout(() => t.classList.remove('show'), 4200);
+              }
+              function applyTheme(dark) {
+                isDark = dark;
+                document.body.classList.toggle('dark-mode', isDark);
+                document.getElementById('theme-toggle-btn').innerHTML = isDark ? '☀️ Nền sáng' : '🌙 Nền tối';
+                const cb = document.getElementById('dark-mode-checkbox');
+                if (cb) cb.checked = isDark;
+                localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
+                if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.iosNotify) {
+                  window.webkit.messageHandlers.iosNotify.postMessage({ action: 'setTheme', isDark: isDark });
+                }
+              }
+              function toggleTheme(forceVal) {
+                const next = typeof forceVal === 'boolean' ? forceVal : !isDark;
+                applyTheme(next);
+              }
+              function toDateStr(d) {
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${y}-${m}-${day}`;
+              }
+              function getExactTimestampMs(dateStr, timeStr) {
+                const [y, m, d] = dateStr.split('-').map(Number);
+                const [hh, mm] = timeStr.split(':').map(Number);
+                return new Date(y, m - 1, d, hh, mm, 0, 0).getTime();
+              }
+              function formatTimeVi(time24) {
+                if (!time24) return '';
+                const [hh, mm] = time24.split(':').map(Number);
+                let period = 'sáng';
+                let h12 = hh;
+                if (hh === 12) { period = 'trưa'; }
+                else if (hh > 12 && hh < 18) { period = 'chiều'; h12 = hh - 12; }
+                else if (hh >= 18) { period = 'tối'; h12 = hh - 12; }
+                else if (hh === 0) { period = 'đêm'; h12 = 12; }
+                return `${time24} (${h12}h${mm > 0 ? String(mm).padStart(2, '0') : ''} ${period})`;
+              }
+              function formatDateVi(dateStr) {
+                const [y, m, d] = dateStr.split('-').map(Number);
+                const date = new Date(y, m - 1, d);
+                const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+                return `${days[date.getDay()]}, ${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`;
+              }
+              function closeCover() { document.getElementById('cover-screen').classList.add('hidden'); }
+              function openCover() { updateCoverSummary(); document.getElementById('cover-screen').classList.remove('hidden'); }
+              function updateCoverSummary() {
+                const todayStr = toDateStr(new Date());
+                const todayList = appointments.filter(a => a.date === todayStr).sort((a, b) => a.time.localeCompare(b.time));
+                const el = document.getElementById('cover-today-summary');
+                if (todayList.length === 0) {
+                  el.textContent = `Hôm nay (${formatDateVi(todayStr)}) chưa có khách đặt lịch.`;
+                } else {
+                  const preview = todayList.map(a => `${a.time} ${a.customerName}`).join(' • ');
+                  el.textContent = `Hôm nay có ${todayList.length} khách: ${preview}`;
+                }
+              }
+              function switchTab(tab, btn) {
+                document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                document.getElementById('tab-' + tab).classList.add('active');
+                btn.classList.add('active');
+                if (tab === 'all') renderAllList();
+                if (tab === 'notify') syncIosNotifications();
+              }
+              function changeMonth(delta) {
+                viewMonth += delta;
+                if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+                if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+                renderCalendar();
+              }
+              function goToday() {
+                const t = new Date();
+                viewYear = t.getFullYear();
+                viewMonth = t.getMonth();
+                selectedDateStr = toDateStr(t);
+                renderCalendar();
+                renderDayAppointments();
+              }
+              function renderCalendar() {
+                const monthNames = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
+                document.getElementById('cal-month-label').textContent = `${monthNames[viewMonth]}, ${viewYear}`;
+                const grid = document.getElementById('days-grid');
+                grid.innerHTML = '';
+                const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+                const offset = firstDay === 0 ? 6 : firstDay - 1;
+                const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+                const todayStr = toDateStr(new Date());
+                for (let i = 0; i < offset; i++) {
+                  const empty = document.createElement('div');
+                  empty.className = 'day-cell empty';
+                  grid.appendChild(empty);
+                }
+                for (let d = 1; d <= daysInMonth; d++) {
+                  const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                  const dayApts = appointments.filter(a => a.date === dateStr).sort((a, b) => a.time.localeCompare(b.time));
+                  const cell = document.createElement('div');
+                  cell.className = 'day-cell';
+                  if (dateStr === todayStr) cell.classList.add('today');
+                  if (dateStr === selectedDateStr) cell.classList.add('selected');
+                  let pillsHtml = '';
+                  dayApts.slice(0, 2).forEach(a => {
+                    const cls = a.service.toLowerCase().includes('nail') && !a.service.toLowerCase().includes('makeup') ? 'nail' : 'makeup';
+                    pillsHtml += `<span class="mini-time ${cls}">${a.time}</span>`;
+                  });
+                  if (dayApts.length > 2) {
+                    pillsHtml += `<span class="more-badge">+${dayApts.length - 2} khách</span>`;
+                  }
+                  cell.innerHTML = `<div class="day-num">${d}</div><div class="day-pills">${pillsHtml}</div>`;
+                  cell.onclick = () => {
+                    selectedDateStr = dateStr;
+                    renderCalendar();
+                    renderDayAppointments();
+                  };
+                  grid.appendChild(cell);
+                }
+              }
+              function getMinutes(timeStr) {
+                const [h, m] = timeStr.split(':').map(Number);
+                return h * 60 + m;
+              }
+              function renderDayAppointments() {
+                const todayStr = toDateStr(new Date());
+                const prefix = selectedDateStr === todayStr ? 'Hôm nay • ' : '';
+                document.getElementById('selected-day-title').textContent = prefix + formatDateVi(selectedDateStr);
+                const list = appointments.filter(a => a.date === selectedDateStr).sort((a, b) => a.time.localeCompare(b.time));
+                document.getElementById('selected-day-count').textContent = `${list.length} khách`;
+                const container = document.getElementById('day-appointments-list');
+                if (list.length === 0) {
+                  container.innerHTML = `<div class="empty-state">Ngày này chưa có lịch hẹn nào.<br/>Bấm nút <strong>+</strong> bên dưới để ghi chú khách đặt lịch.</div>`;
+                  return;
+                }
+                let html = '';
+                list.forEach((apt, idx) => {
+                  if (idx > 0) {
+                    const diff = getMinutes(apt.time) - getMinutes(list[idx - 1].time);
+                    if (diff < 45) {
+                      html += `<div class="gap-indicator warn">⚠️ Trùng / Sát giờ với khách trước (${diff} phút)</div>`;
+                    } else {
+                      const hrs = Math.floor(diff / 60);
+                      const mins = diff % 60;
+                      const gapText = hrs > 0 ? `${hrs} tiếng ${mins > 0 ? mins + ' phút' : ''}` : `${mins} phút`;
+                      html += `<div class="gap-indicator">↓ Cách ca trước ${gapText}</div>`;
+                    }
+                  }
+                  html += renderCardHtml(apt);
+                });
+                container.innerHTML = html;
+              }
+              function renderCardHtml(apt) {
+                let srvClass = 'makeup';
+                if (apt.service === 'Nail') srvClass = 'nail';
+                else if (apt.service.includes('&')) srvClass = 'combo';
+                const photoHtml = apt.photo ? `<img src="${apt.photo}" class="apt-photo" alt="Ảnh khách" />` : '';
+                const noteHtml = apt.note ? `<div class="apt-note">📝 ${escapeHtml(apt.note)}</div>` : '';
+                const remText = settings.remindBeforeMinutes > 0 ? `Báo trước ${settings.remindBeforeMinutes}p & đúng ${apt.time}` : `Báo đúng ${apt.time}`;
+                return `
+                  <div class="apt-card">
+                    <div class="apt-top">
+                      <span class="time-badge">⏰ ${formatTimeVi(apt.time)}</span>
+                      <span class="service-tag ${srvClass}">${escapeHtml(apt.service)}</span>
+                    </div>
+                    <div class="apt-body">
+                      ${photoHtml}
+                      <div class="apt-info">
+                        <div class="customer-name">${escapeHtml(apt.customerName)}</div>
+                        ${noteHtml}
+                        <div class="alarm-info-row">🔔 ${remText}</div>
+                      </div>
+                    </div>
+                    <div class="apt-actions">
+                      <button class="btn-mini" onclick="editAppointment('${apt.id}')">✏️ Sửa</button>
+                      <button class="btn-mini danger" onclick="deleteAppointment('${apt.id}')">🗑️ Xoá</button>
+                    </div>
+                  </div>
+                `;
+              }
+              function setFilter(filter, btn) {
+                currentFilter = filter;
+                document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                renderAllList();
+              }
+              function renderAllList() {
+                const q = document.getElementById('search-input').value.trim().toLowerCase();
+                const todayStr = toDateStr(new Date());
+                let filtered = appointments.filter(a => {
+                  const matchText = !q || a.customerName.toLowerCase().includes(q) || (a.note && a.note.toLowerCase().includes(q));
+                  if (!matchText) return false;
+                  if (currentFilter === 'upcoming') return a.date >= todayStr;
+                  if (currentFilter === 'past') return a.date < todayStr;
+                  if (currentFilter === 'Makeup') return a.service.includes('Makeup');
+                  if (currentFilter === 'Nail') return a.service.includes('Nail');
+                  return true;
+                });
+                filtered.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+                const container = document.getElementById('all-appointments-list');
+                if (filtered.length === 0) {
+                  container.innerHTML = `<div class="empty-state">Không tìm thấy lịch hẹn phù hợp.</div>`;
+                  return;
+                }
+                let html = '';
+                let lastDate = '';
+                filtered.forEach(apt => {
+                  if (apt.date !== lastDate) {
+                    lastDate = apt.date;
+                    const tag = apt.date === todayStr ? ' (Hôm nay)' : '';
+                    html += `<div class="date-group-label">📅 ${formatDateVi(apt.date)}${tag}</div>`;
+                  }
+                  html += renderCardHtml(apt);
+                });
+                container.innerHTML = html;
+              }
+              function selectService(srv, el) {
+                selectedService = srv;
+                document.querySelectorAll('.srv-opt').forEach(o => o.classList.remove('selected'));
+                el.classList.add('selected');
+              }
+              function setQuickTime(t) {
+                document.getElementById('inp-time').value = t;
+                checkOverlapWarning();
+              }
+              function checkOverlapWarning() {
+                const date = document.getElementById('inp-date').value;
+                const time = document.getElementById('inp-time').value;
+                const editId = document.getElementById('edit-id').value;
+                const alertEl = document.getElementById('overlap-alert');
+                if (!date || !time) { alertEl.style.display = 'none'; return; }
+                const targetMins = getMinutes(time);
+                const conflict = appointments.find(a => a.date === date && a.id !== editId && Math.abs(getMinutes(a.time) - targetMins) < 45);
+                if (conflict) {
+                  alertEl.textContent = `⚠️ Lưu ý: Đã có khách ${conflict.customerName} lúc ${conflict.time} (${conflict.service})`;
+                  alertEl.style.display = 'block';
+                } else {
+                  alertEl.style.display = 'none';
+                }
+              }
+              function openModal() {
+                document.getElementById('modal-title').textContent = 'Thêm Lịch Đặt Mới';
+                document.getElementById('edit-id').value = '';
+                document.getElementById('inp-name').value = '';
+                document.getElementById('inp-date').value = selectedDateStr;
+                const nextTime = new Date(Date.now() + 5 * 60000);
+                document.getElementById('inp-time').value = `${String(nextTime.getHours()).padStart(2,'0')}:${String(nextTime.getMinutes()).padStart(2,'0')}`;
+                document.getElementById('inp-note').value = '';
+                document.getElementById('inp-photo').value = '';
+                currentPhotoBase64 = '';
+                document.getElementById('photo-preview').style.display = 'none';
+                selectService('Makeup', document.querySelector('.srv-opt[data-srv="Makeup"]'));
+                checkOverlapWarning();
+                document.getElementById('apt-modal').classList.add('open');
+              }
+              function editAppointment(id) {
+                const apt = appointments.find(a => a.id === id);
+                if (!apt) return;
+                document.getElementById('modal-title').textContent = 'Sửa Lịch Hẹn';
+                document.getElementById('edit-id').value = apt.id;
+                document.getElementById('inp-name').value = apt.customerName;
+                document.getElementById('inp-date').value = apt.date;
+                document.getElementById('inp-time').value = apt.time;
+                document.getElementById('inp-note').value = apt.note || '';
+                currentPhotoBase64 = apt.photo || '';
+                const prev = document.getElementById('photo-preview');
+                if (currentPhotoBase64) { prev.src = currentPhotoBase64; prev.style.display = 'block'; }
+                else { prev.style.display = 'none'; }
+                const opt = document.querySelector(`.srv-opt[data-srv="${apt.service}"]`) || document.querySelector('.srv-opt');
+                selectService(apt.service, opt);
+                checkOverlapWarning();
+                document.getElementById('apt-modal').classList.add('open');
+              }
+              function closeModal() { document.getElementById('apt-modal').classList.remove('open'); }
+              function handlePhotoUpload(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                  const img = new Image();
+                  img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const maxW = 480;
+                    const scale = Math.min(1, maxW / img.width);
+                    canvas.width = img.width * scale;
+                    canvas.height = img.height * scale;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    currentPhotoBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                    const prev = document.getElementById('photo-preview');
+                    prev.src = currentPhotoBase64;
+                    prev.style.display = 'block';
+                  };
+                  img.src = evt.target.result;
+                };
+                reader.readAsDataURL(file);
+              }
+              function saveAppointment() {
+                const name = document.getElementById('inp-name').value.trim();
+                const date = document.getElementById('inp-date').value;
+                const time = document.getElementById('inp-time').value;
+                const note = document.getElementById('inp-note').value.trim();
+                const editId = document.getElementById('edit-id').value;
+                if (!name || !date || !time) {
+                  alert('Vui lòng nhập đầy đủ Tên khách, Ngày đặt và Giờ hẹn!');
+                  return;
+                }
+                if (editId) {
+                  const idx = appointments.findIndex(a => a.id === editId);
+                  if (idx !== -1) {
+                    appointments[idx] = { ...appointments[idx], customerName: name, date, time, service: selectedService, note, photo: currentPhotoBase64 };
+                  }
+                } else {
+                  appointments.push({
+                    id: 'apt_' + Date.now(),
+                    customerName: name,
+                    date,
+                    time,
+                    service: selectedService,
+                    note,
+                    photo: currentPhotoBase64
+                  });
+                }
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(appointments));
+                selectedDateStr = date;
+                const [y, m] = date.split('-').map(Number);
+                viewYear = y;
+                viewMonth = m - 1;
+                closeModal();
+                renderCalendar();
+                renderDayAppointments();
+                renderAllList();
+                updateCoverSummary();
+                syncIosNotifications();
+                showToast(`🔔 Đã hẹn báo iPhone đúng ${time} (và nhắc trước ${settings.remindBeforeMinutes}p)`);
+              }
+              function deleteAppointment(id) {
+                if (!confirm('Bạn có chắc muốn xoá lịch hẹn này không?')) return;
+                appointments = appointments.filter(a => a.id !== id);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(appointments));
+                renderCalendar();
+                renderDayAppointments();
+                renderAllList();
+                updateCoverSummary();
+                syncIosNotifications();
+              }
+              function saveSettings() {
+                settings.enableExactTime = document.getElementById('enable-exact').checked;
+                settings.remindBeforeMinutes = Number(document.getElementById('remind-minutes').value);
+                settings.enableDailySummary = document.getElementById('enable-summary').checked;
+                settings.summaryTime = document.getElementById('summary-time').value || '21:00';
+                localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+                syncIosNotifications();
+                showToast('✅ Đã lưu cài đặt thông báo!');
+              }
+              window.onIosPendingCount = function(count) {
+                const badge = document.getElementById('ios-pending-badge');
+                if (badge) badge.textContent = `Đã đặt: ${count} chuông báo`;
+              };
+              function syncIosNotifications() {
+                const [h, m] = (settings.summaryTime || '21:00').split(':').map(Number);
+                if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.iosNotify) {
+                  window.webkit.messageHandlers.iosNotify.postMessage({
+                    action: 'syncNotifications',
+                    enableExactTime: settings.enableExactTime,
+                    remindBeforeMinutes: settings.remindBeforeMinutes,
+                    enableDailySummary: settings.enableDailySummary,
+                    dailySummaryHour: h,
+                    dailySummaryMinute: m,
+                    appointments: appointments.map(a => ({
+                      id: a.id,
+                      date: a.date,
+                      time: a.time,
+                      exactTimestampMs: getExactTimestampMs(a.date, a.time),
+                      customerName: a.customerName,
+                      service: a.service,
+                      note: a.note || ''
+                    }))
+                  });
+                }
+              }
+              function sendTestNotification() {
+                if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.iosNotify) {
+                  window.webkit.messageHandlers.iosNotify.postMessage({ action: 'testNotification' });
+                  showToast('🔔 Đã kích hoạt! Hãy khoá màn hình iPhone ngay (5 giây)...');
+                } else {
+                  alert('Chức năng này hoạt động trên bản IPA iPhone.');
+                }
+              }
+              setInterval(() => {
+                const now = new Date();
+                const todayStr = toDateStr(now);
+                const curTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+                appointments.forEach(a => {
+                  const key = `${a.id}_${curTime}`;
+                  if (a.date === todayStr && a.time === curTime && !firedInAppIds[key]) {
+                    firedInAppIds[key] = true;
+                    showToast(`🔔 ĐẾN GIỜ HẸN (${a.time}): ${a.customerName} • ${a.service}`);
+                  }
+                });
+              }, 5000);
+              function escapeHtml(str) {
+                return String(str).replace(/[&<>"']/g, s => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[s]));
+              }
+              applyTheme(isDark);
+              document.getElementById('header-date-sub').textContent = formatDateVi(toDateStr(new Date()));
+              document.getElementById('enable-exact').checked = settings.enableExactTime;
+              document.getElementById('remind-minutes').value = settings.remindBeforeMinutes;
+              document.getElementById('enable-summary').checked = settings.enableDailySummary;
+              document.getElementById('summary-time').value = settings.summaryTime;
+              updateCoverSummary();
+              renderCalendar();
+              renderDayAppointments();
+              syncIosNotifications();
+            </script>
+          </body>
+          </html>
+          HTMLEOF
           cat << 'EOF' > AppSource/App.swift
           import SwiftUI
           import WebKit
@@ -98,7 +1503,7 @@ jobs:
                   return true
               }
               func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-                  completionHandler([.banner, .sound, .list])
+                  completionHandler([.banner, .sound, .list, .badge])
               }
               func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
                   completionHandler()
@@ -121,15 +1526,17 @@ jobs:
               }
               private func scheduleTestBanner() {
                   let content = UNMutableNotificationContent()
-                  content.title = "🔔 ĐẾN GIỜ HẸN KHÁCH (17:30)"
-                  content.body = "Chị Thảo • Makeup đã tới giờ làm!"
+                  content.title = "🔔 ĐẾN GIỜ HẸN KHÁCH (Kim Ngân Studio)"
+                  content.body = "Chuông báo màn hình khoá và báo đúng giờ đã hoạt động!"
                   content.sound = .default
+                  if #available(iOS 15.0, *) { content.interruptionLevel = .timeSensitive }
                   let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
                   let req = UNNotificationRequest(identifier: "test-banner-\(UUID().uuidString)", content: content, trigger: trigger)
                   UNUserNotificationCenter.current().add(req)
               }
               private func syncAllAppointments(_ dict: [String: Any]) {
                   let center = UNUserNotificationCenter.current()
+                  center.requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
                   center.removeAllPendingNotificationRequests()
                   guard let list = dict["appointments"] as? [[String: Any]] else { return }
                   let enableExact = dict["enableExactTime"] as? Bool ?? true
@@ -137,40 +1544,56 @@ jobs:
                   let enableSummary = dict["enableDailySummary"] as? Bool ?? true
                   let summaryHour = dict["dailySummaryHour"] as? Int ?? 21
                   let summaryMinute = dict["dailySummaryMinute"] as? Int ?? 0
+                  let nowSec = Date().timeIntervalSince1970
                   let posixLocale = Locale(identifier: "en_US_POSIX")
-                  let formatter = DateFormatter()
-                  formatter.locale = posixLocale
-                  formatter.dateFormat = "yyyy-MM-dd HH:mm"
-                  formatter.timeZone = TimeZone.current
                   let dayFormatter = DateFormatter()
                   dayFormatter.locale = posixLocale
                   dayFormatter.dateFormat = "yyyy-MM-dd"
                   dayFormatter.timeZone = TimeZone.current
                   let calendar = Calendar.current
-                  let now = Date()
                   var groupedByDate: [String: [[String: Any]]] = [:]
                   for item in list {
                       guard let id = item["id"] as? String, let dateStr = item["date"] as? String, let timeStr = item["time"] as? String, let name = item["customerName"] as? String, let service = item["service"] as? String else { continue }
                       let note = item["note"] as? String ?? ""
                       groupedByDate[dateStr, default: []].append(item)
-                      guard let aptDate = formatter.date(from: "\(dateStr) \(timeStr)") else { continue }
-                      if remindBefore > 0, let triggerBefore = calendar.date(byAdding: .minute, value: -remindBefore, to: aptDate), triggerBefore > now {
-                          let comps = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: triggerBefore)
-                          let content = UNMutableNotificationContent()
-                          content.title = "⏳ \(remindBefore) phút nữa có khách (\(timeStr))"
-                          content.body = "\(name) • \(service)" + (note.isEmpty ? "" : " — \(note)")
-                          content.sound = .default
-                          let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
-                          center.add(UNNotificationRequest(identifier: "apt-remind-\(id)", content: content, trigger: trigger))
+                      var exactSec: Double = 0
+                      if let ms = item["exactTimestampMs"] as? Double {
+                          exactSec = ms / 1000.0
+                      } else if let msInt = item["exactTimestampMs"] as? Int64 {
+                          exactSec = Double(msInt) / 1000.0
                       }
-                      if enableExact, aptDate > now {
-                          let compsExact = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: aptDate)
-                          let contentExact = UNMutableNotificationContent()
-                          contentExact.title = "🔔 ĐẾN GIỜ HẸN KHÁCH (\(timeStr))"
-                          contentExact.body = "\(name) • \(service) đã tới giờ làm!" + (note.isEmpty ? "" : " (\(note))")
-                          contentExact.sound = .default
-                          let triggerExact = UNCalendarNotificationTrigger(dateMatching: compsExact, repeats: false)
-                          center.add(UNNotificationRequest(identifier: "apt-exact-\(id)", content: contentExact, trigger: triggerExact))
+                      if exactSec <= 0 { continue }
+                      let diffExact = exactSec - nowSec
+                      if remindBefore > 0 {
+                          let diffRemind = diffExact - Double(remindBefore * 60)
+                          if diffRemind > 2 {
+                              let content = UNMutableNotificationContent()
+                              content.title = "⏳ \(remindBefore) phút nữa có khách (\(timeStr))"
+                              content.body = "\(name) • \(service)" + (note.isEmpty ? "" : " — \(note)")
+                              content.sound = .default
+                              if #available(iOS 15.0, *) { content.interruptionLevel = .timeSensitive }
+                              let trigger = UNTimeIntervalNotificationTrigger(timeInterval: diffRemind, repeats: false)
+                              center.add(UNNotificationRequest(identifier: "apt-remind-\(id)", content: content, trigger: trigger))
+                          }
+                      }
+                      if enableExact {
+                          if diffExact > 2 {
+                              let contentExact = UNMutableNotificationContent()
+                              contentExact.title = "🔔 ĐẾN GIỜ LÀM KHÁCH (\(timeStr))"
+                              contentExact.body = "\(name) • \(service) đã tới giờ hẹn!" + (note.isEmpty ? "" : " (\(note))")
+                              contentExact.sound = .default
+                              if #available(iOS 15.0, *) { contentExact.interruptionLevel = .timeSensitive }
+                              let triggerExact = UNTimeIntervalNotificationTrigger(timeInterval: diffExact, repeats: false)
+                              center.add(UNNotificationRequest(identifier: "apt-exact-\(id)", content: contentExact, trigger: triggerExact))
+                          } else if diffExact >= -55 && diffExact <= 2 {
+                              let contentNow = UNMutableNotificationContent()
+                              contentNow.title = "🔔 ĐẾN GIỜ LÀM KHÁCH (\(timeStr))"
+                              contentNow.body = "\(name) • \(service) đã tới giờ hẹn!" + (note.isEmpty ? "" : " (\(note))")
+                              contentNow.sound = .default
+                              if #available(iOS 15.0, *) { contentNow.interruptionLevel = .timeSensitive }
+                              let triggerNow = UNTimeIntervalNotificationTrigger(timeInterval: 3, repeats: false)
+                              center.add(UNNotificationRequest(identifier: "apt-exact-now-\(id)", content: contentNow, trigger: triggerNow))
+                          }
                       }
                   }
                   if enableSummary {
@@ -179,13 +1602,14 @@ jobs:
                           var comps = calendar.dateComponents([.year, .month, .day], from: eveningBefore)
                           comps.hour = summaryHour
                           comps.minute = summaryMinute
-                          if let fireDate = calendar.date(from: comps), fireDate > now {
+                          if let fireDate = calendar.date(from: comps), fireDate.timeIntervalSince1970 > nowSec {
                               let sorted = items.sorted { ($0["time"] as? String ?? "") < ($1["time"] as? String ?? "") }
                               let lines = sorted.map { "\($0["time"] ?? "") • \($0["customerName"] ?? "") (\($0["service"] ?? ""))" }
                               let content = UNMutableNotificationContent()
                               content.title = "📅 Ngày mai có \(items.count) khách đặt lịch"
                               content.body = lines.joined(separator: "\n")
                               content.sound = .default
+                              if #available(iOS 15.0, *) { content.interruptionLevel = .timeSensitive }
                               let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
                               center.add(UNNotificationRequest(identifier: "summary-\(dateStr)", content: content, trigger: trigger))
                           }
