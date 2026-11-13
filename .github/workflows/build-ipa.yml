@@ -12,32 +12,98 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Create Capacitor iOS Project
+      - name: Generate Native iOS Project
         run: |
-          mkdir -p www
-          if [ -f "index.html" ]; then
-            cp "index.html" www/index.html
-          elif [ -f "index (1).html" ]; then
-            cp "index (1).html" www/index.html
-          else
-            HTML_FILE=$(find . -maxdepth 1 -name "*.html" | head -n 1)
-            cp "$HTML_FILE" www/index.html
+          mkdir -p AppSource
+          
+          # Tự động tìm file html trong kho chứa và đổi tên chuẩn thành index.html
+          HTML_FILE=$(find . -maxdepth 1 -name "*.html" | head -n 1)
+          if [ -z "$HTML_FILE" ]; then
+            echo "Không tìm thấy file HTML!"
+            exit 1
           fi
-          npm init -y
-          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/ios@6
-          npx cap init "LEclat Studio" "com.kent.leclatstudio" --web-dir www
-          npx cap add ios
+          cp "$HTML_FILE" AppSource/index.html
 
-      - name: Build Unsigned Archive via Xcode
+          # Tạo mã nguồn Swift mở giao diện Full-screen WKWebView chuẩn iOS
+          cat << 'EOF' > AppSource/App.swift
+          import SwiftUI
+          import WebKit
+
+          class FullScreenWKWebView: WKWebView {
+              override var safeAreaInsets: UIEdgeInsets {
+                  return .zero
+              }
+          }
+
+          struct WebViewContainer: UIViewRepresentable {
+              func makeUIView(context: Context) -> WKWebView {
+                  let config = WKWebViewConfiguration()
+                  config.allowsInlineMediaPlayback = true
+                  config.preferences.javaScriptEnabled = true
+                  config.websiteDataStore = .default()
+                  
+                  let webView = FullScreenWKWebView(frame: .zero, configuration: config)
+                  webView.scrollView.contentInsetAdjustmentBehavior = .never
+                  webView.scrollView.bounces = false
+                  webView.isOpaque = false
+                  webView.backgroundColor = UIColor(red: 0.98, green: 0.96, blue: 0.94, alpha: 1.0)
+                  
+                  if let url = Bundle.main.url(forResource: "index", withExtension: "html") {
+                      webView.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
+                  }
+                  return webView
+              }
+              func updateUIView(_ uiView: WKWebView, context: Context) {}
+          }
+
+          @main
+          struct LEclatStudioApp: App {
+              var body: some Scene {
+                  WindowGroup {
+                      WebViewContainer()
+                          .ignoresSafeArea(.all)
+                          .preferredColorScheme(.light)
+                  }
+              }
+          }
+          EOF
+
+          # Tạo cấu hình XcodeGen không cần chứng chỉ Apple
+          cat << 'EOF' > project.yml
+          name: LEclatStudio
+          options:
+            bundleIdPrefix: com.kent
+            deploymentTarget:
+              iOS: "15.0"
+          targets:
+            LEclatStudio:
+              type: application
+              platform: iOS
+              sources:
+                - path: AppSource
+                  excludes:
+                    - "*.html"
+              resources:
+                - path: AppSource/index.html
+              settings:
+                base:
+                  PRODUCT_BUNDLE_IDENTIFIER: com.kent.leclatstudio
+                  INFOPLIST_KEY_CFBundleDisplayName: "L'Éclat Studio"
+                  INFOPLIST_KEY_UIStatusBarStyle: UIStatusBarStyleDarkContent
+                  INFOPLIST_KEY_UILaunchScreen_Generation: YES
+                  INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+                  GENERATE_INFOPLIST_FILE: YES
+                  CODE_SIGN_IDENTITY: ""
+                  CODE_SIGNING_REQUIRED: NO
+                  CODE_SIGNING_ALLOWED: NO
+          EOF
+
+          xcodegen generate
+
+      - name: Build Unsigned .app via Xcode
         run: |
-          cd ios/App
-          xcodebuild -project App.xcodeproj \
-            -scheme App \
+          xcodebuild -project LEclatStudio.xcodeproj \
+            -scheme LEclatStudio \
             -configuration Release \
             -sdk iphoneos \
             -derivedDataPath build \
@@ -50,7 +116,7 @@ jobs:
       - name: Package .app into .ipa
         run: |
           mkdir -p Payload
-          APP_PATH=$(find ios/App/build -name "App.app" -type d | head -n 1)
+          APP_PATH=$(find build -name "LEclatStudio.app" -type d | head -n 1)
           cp -r "$APP_PATH" Payload/
           zip -r LEclat-Studio-Unsigned.ipa Payload
 
