@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-ipa:
-    runs-on: macos-14
+    runs-on: macos-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -20,9 +20,16 @@ jobs:
       - name: Create Capacitor iOS Project
         run: |
           mkdir -p www
-          cp index.html www/index.html
+          if [ -f "index.html" ]; then
+            cp "index.html" www/index.html
+          elif [ -f "index (1).html" ]; then
+            cp "index (1).html" www/index.html
+          else
+            HTML_FILE=$(find . -maxdepth 1 -name "*.html" | head -n 1)
+            cp "$HTML_FILE" www/index.html
+          fi
           npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/ios
+          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/ios@6
           npx cap init "LEclat Studio" "com.kent.leclatstudio" --web-dir www
           npx cap add ios
 
@@ -37,12 +44,14 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES \
             clean build
 
       - name: Package .app into .ipa
         run: |
           mkdir -p Payload
-          cp -r ios/App/build/Build/Products/Release-iphoneos/App.app Payload/
+          APP_PATH=$(find ios/App/build -name "App.app" -type d | head -n 1)
+          cp -r "$APP_PATH" Payload/
           zip -r LEclat-Studio-Unsigned.ipa Payload
 
       - name: Upload IPA Artifact
