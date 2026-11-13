@@ -12,11 +12,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
       - name: Generate Native iOS Project
         run: |
+          export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
           mkdir -p AppSource
           
-          # Tự động tìm file html trong kho chứa và đổi tên chuẩn thành index.html
           HTML_FILE=$(find . -maxdepth 1 -name "*.html" | head -n 1)
           if [ -z "$HTML_FILE" ]; then
             echo "Không tìm thấy file HTML!"
@@ -24,7 +27,6 @@ jobs:
           fi
           cp "$HTML_FILE" AppSource/index.html
 
-          # Tạo mã nguồn Swift mở giao diện Full-screen WKWebView chuẩn iOS
           cat << 'EOF' > AppSource/App.swift
           import SwiftUI
           import WebKit
@@ -39,7 +41,7 @@ jobs:
               func makeUIView(context: Context) -> WKWebView {
                   let config = WKWebViewConfiguration()
                   config.allowsInlineMediaPlayback = true
-                  config.preferences.javaScriptEnabled = true
+                  config.defaultWebpagePreferences.allowsContentJavaScript = true
                   config.websiteDataStore = .default()
                   
                   let webView = FullScreenWKWebView(frame: .zero, configuration: config)
@@ -68,7 +70,6 @@ jobs:
           }
           EOF
 
-          # Tạo cấu hình XcodeGen không cần chứng chỉ Apple
           cat << 'EOF' > project.yml
           name: LEclatStudio
           options:
@@ -88,10 +89,12 @@ jobs:
               settings:
                 base:
                   PRODUCT_BUNDLE_IDENTIFIER: com.kent.leclatstudio
-                  INFOPLIST_KEY_CFBundleDisplayName: "L'Éclat Studio"
+                  INFOPLIST_KEY_CFBundleDisplayName: "LEclat Studio"
                   INFOPLIST_KEY_UIStatusBarStyle: UIStatusBarStyleDarkContent
                   INFOPLIST_KEY_UILaunchScreen_Generation: YES
                   INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+                  INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Cho phep chon anh khach hang va mau nail makeup"
+                  INFOPLIST_KEY_NSCameraUsageDescription: "Cho phep chup anh khach hang va mau nail makeup"
                   GENERATE_INFOPLIST_FILE: YES
                   CODE_SIGN_IDENTITY: ""
                   CODE_SIGNING_REQUIRED: NO
