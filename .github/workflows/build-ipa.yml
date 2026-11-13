@@ -77,7 +77,7 @@ jobs:
           swift make_assets.swift
           echo '{"info":{"author":"xcode","version":1}}' > Assets.xcassets/Contents.json
           echo '{"images":[{"filename":"icon_1024.png","idiom":"universal","platform":"ios","size":"1024x1024"}],"info":{"author":"xcode","version":1}}' > Assets.xcassets/AppIcon.appiconset/Contents.json
-      - name: Generate New UI and Native Notification Engine
+      - name: Generate App Store Quality UI and Native Engine
         run: |
           export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
           cat << 'HTMLEOF' > AppSource/index.html
@@ -89,53 +89,63 @@ jobs:
             <title>Kim Ngân Studio</title>
             <link rel="preconnect" href="https://fonts.googleapis.com">
             <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-            <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+            <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
             <style>
               :root {
-                --bg-cream: #FAF5F2;
+                --bg-cream: #F8F4F0;
                 --bg-card: #FFFFFF;
-                --bg-subtle: #F3EAE4;
-                --espresso: #231917;
-                --espresso-soft: #5C4742;
-                --rose: #C86D77;
-                --rose-light: #F9E8EA;
-                --gold: #B88A44;
-                --gold-light: #FBF3E4;
-                --border: #E8DDD6;
-                --text-muted: #8C7A75;
-                --nav-bg: rgba(255, 255, 255, 0.94);
-                --shadow-card: 0 6px 20px rgba(35, 25, 23, 0.05);
-                --safe-top: env(safe-area-inset-top, 44px);
+                --bg-subtle: #F1E9E3;
+                --espresso: #1E1513;
+                --espresso-soft: #5C4944;
+                --rose: #C86470;
+                --rose-light: #FCECEF;
+                --gold: #B6843A;
+                --gold-light: #FCF3E3;
+                --home-orange: #D96B27;
+                --home-orange-bg: #FFF0E5;
+                --call-green: #188654;
+                --call-green-bg: #E6F6EE;
+                --border: rgba(30, 21, 19, 0.08);
+                --text-muted: #8A7873;
+                --nav-bg: rgba(255, 255, 255, 0.86);
+                --shadow-card: 0 8px 24px rgba(30, 21, 19, 0.045);
+                --safe-top: env(safe-area-inset-top, 47px);
                 --safe-bottom: env(safe-area-inset-bottom, 24px);
               }
               body.dark-mode {
-                --bg-cream: #110D0C;
-                --bg-card: #1B1514;
-                --bg-subtle: #271E1C;
-                --espresso: #F7F0EB;
-                --espresso-soft: #D0C0BA;
-                --rose: #E58A94;
-                --rose-light: rgba(229, 138, 148, 0.18);
-                --gold: #E6BC72;
-                --gold-light: rgba(230, 188, 114, 0.16);
-                --border: #322623;
-                --text-muted: #9E8C86;
-                --nav-bg: rgba(22, 17, 16, 0.94);
-                --shadow-card: 0 8px 26px rgba(0, 0, 0, 0.45);
+                --bg-cream: #0F0B0A;
+                --bg-card: #1A1413;
+                --bg-subtle: #251C1A;
+                --espresso: #F8F1EC;
+                --espresso-soft: #CEBEB8;
+                --rose: #E58590;
+                --rose-light: rgba(229, 133, 144, 0.16);
+                --gold: #E8BD70;
+                --gold-light: rgba(232, 189, 112, 0.15);
+                --home-orange: #F59356;
+                --home-orange-bg: rgba(245, 147, 86, 0.16);
+                --call-green: #42C78A;
+                --call-green-bg: rgba(66, 199, 138, 0.16);
+                --border: rgba(255, 245, 238, 0.09);
+                --text-muted: #9A8882;
+                --nav-bg: rgba(24, 18, 17, 0.88);
+                --shadow-card: 0 10px 28px rgba(0, 0, 0, 0.45);
               }
-              * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+              * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+              input, textarea { user-select: text; -webkit-user-select: text; }
               body {
                 font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
                 background-color: var(--bg-cream);
                 color: var(--espresso);
                 min-height: 100vh;
                 overflow-x: hidden;
-                padding-bottom: calc(90px + var(--safe-bottom));
+                padding-bottom: calc(96px + var(--safe-bottom));
                 transition: background-color 0.28s ease, color 0.28s ease;
+                -webkit-font-smoothing: antialiased;
               }
               @keyframes kenBurns {
                 0% { transform: scale(1); }
-                100% { transform: scale(1.09); }
+                100% { transform: scale(1.08); }
               }
               @keyframes spinSlow {
                 0% { transform: rotate(0deg); }
@@ -146,16 +156,16 @@ jobs:
                 100% { transform: rotate(0deg); }
               }
               @keyframes floatUp {
-                0% { opacity: 0; transform: translateY(22px) scale(0.96); }
+                0% { opacity: 0; transform: translateY(18px) scale(0.98); }
                 100% { opacity: 1; transform: translateY(0) scale(1); }
               }
               @keyframes pulseGlow {
                 0%, 100% { filter: drop-shadow(0 0 8px rgba(238, 198, 128, 0.45)); transform: scale(1); }
-                50% { filter: drop-shadow(0 0 18px rgba(238, 198, 128, 0.85)); transform: scale(1.03); }
+                50% { filter: drop-shadow(0 0 18px rgba(238, 198, 128, 0.8)); transform: scale(1.03); }
               }
               @keyframes sparkleFloat {
                 0% { transform: translateY(0) scale(0.6); opacity: 0; }
-                50% { opacity: 0.9; }
+                50% { opacity: 0.85; }
                 100% { transform: translateY(-90px) scale(1.2); opacity: 0; }
               }
               @keyframes shimmerSweep {
@@ -172,12 +182,12 @@ jobs:
                 flex-direction: column;
                 justify-content: space-between;
                 overflow: hidden;
-                transition: opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1), transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+                transition: opacity 0.48s cubic-bezier(0.22, 1, 0.36, 1), transform 0.48s cubic-bezier(0.22, 1, 0.36, 1);
               }
               #cover-screen.hidden {
                 opacity: 0;
                 pointer-events: none;
-                transform: scale(1.06);
+                transform: scale(1.05);
               }
               #cover-img {
                 position: absolute;
@@ -186,19 +196,14 @@ jobs:
                 height: 100%;
                 object-fit: cover;
                 object-position: center top;
-                animation: kenBurns 12s ease-in-out infinite alternate;
+                animation: kenBurns 13s ease-in-out infinite alternate;
               }
               .cover-gradient {
                 position: absolute;
                 inset: 0;
-                background: linear-gradient(to bottom, rgba(16, 10, 9, 0.55) 0%, rgba(16, 10, 9, 0.22) 38%, rgba(16, 10, 9, 0.86) 76%, rgba(12, 7, 6, 0.98) 100%);
+                background: linear-gradient(to bottom, rgba(16, 10, 9, 0.52) 0%, rgba(16, 10, 9, 0.2) 38%, rgba(16, 10, 9, 0.86) 76%, rgba(12, 7, 6, 0.98) 100%);
               }
-              .sparkle-layer {
-                position: absolute;
-                inset: 0;
-                pointer-events: none;
-                z-index: 1;
-              }
+              .sparkle-layer { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
               .sp-dot {
                 position: absolute;
                 width: 6px;
@@ -214,12 +219,12 @@ jobs:
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                animation: floatUp 0.75s ease-out both;
+                animation: floatUp 0.7s ease-out both;
               }
               .bespoke-logo-box {
                 position: relative;
-                width: 122px;
-                height: 122px;
+                width: 118px;
+                height: 118px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -242,26 +247,26 @@ jobs:
               .cover-content {
                 position: relative;
                 z-index: 2;
-                padding: 20px 20px calc(30px + var(--safe-bottom));
+                padding: 20px 20px calc(28px + var(--safe-bottom));
                 color: #FFF;
                 text-align: center;
-                animation: floatUp 0.85s ease-out 0.15s both;
+                animation: floatUp 0.82s ease-out 0.12s both;
               }
               .cover-glass-box {
-                background: rgba(22, 14, 13, 0.66);
-                backdrop-filter: blur(18px);
-                -webkit-backdrop-filter: blur(18px);
-                border: 1px solid rgba(243, 209, 155, 0.32);
-                border-radius: 26px;
+                background: rgba(22, 14, 13, 0.68);
+                backdrop-filter: blur(20px) saturate(180%);
+                -webkit-backdrop-filter: blur(20px) saturate(180%);
+                border: 0.5px solid rgba(243, 209, 155, 0.35);
+                border-radius: 28px;
                 padding: 22px 18px;
-                box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
+                box-shadow: 0 20px 48px rgba(0, 0, 0, 0.55);
               }
               .cover-badge {
                 display: inline-block;
                 padding: 5px 14px;
                 border-radius: 999px;
-                background: rgba(230, 188, 114, 0.2);
-                border: 1px solid rgba(243, 209, 155, 0.45);
+                background: rgba(230, 188, 114, 0.18);
+                border: 0.5px solid rgba(243, 209, 155, 0.45);
                 color: #F6D8A6;
                 font-size: 11px;
                 font-weight: 700;
@@ -273,7 +278,7 @@ jobs:
                 font-family: 'Playfair Display', serif;
                 font-size: 31px;
                 font-weight: 700;
-                letter-spacing: 0.5px;
+                letter-spacing: 0.4px;
                 margin-bottom: 6px;
                 background: linear-gradient(90deg, #FFFDF9, #F5D59B, #FFFDF9);
                 -webkit-background-clip: text;
@@ -295,10 +300,12 @@ jobs:
                 background: linear-gradient(135deg, #F0C987 0%, #C68E3F 100%);
                 color: #1B110F;
                 font-size: 15.5px;
-                font-weight: 700;
+                font-weight: 800;
                 cursor: pointer;
-                box-shadow: 0 10px 26px rgba(198, 142, 63, 0.42);
+                box-shadow: 0 10px 26px rgba(198, 142, 63, 0.4);
+                transition: transform 0.15s ease;
               }
+              .btn-enter:active { transform: scale(0.98); }
               .btn-enter::after {
                 content: '';
                 position: absolute;
@@ -316,9 +323,11 @@ jobs:
                 left: 16px;
                 right: 16px;
                 z-index: 9500;
-                background: linear-gradient(135deg, #231917 0%, #3E2A27 100%);
+                background: rgba(28, 19, 18, 0.94);
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
                 color: #F6D8A6;
-                border: 1px solid rgba(243, 209, 155, 0.45);
+                border: 0.5px solid rgba(243, 209, 155, 0.45);
                 padding: 13px 16px;
                 border-radius: 16px;
                 font-size: 13px;
@@ -330,31 +339,22 @@ jobs:
                 pointer-events: none;
                 text-align: center;
               }
-              #toast-banner.show {
-                transform: translateY(0);
-                opacity: 1;
-              }
+              #toast-banner.show { transform: translateY(0); opacity: 1; }
               .app-header {
-                padding: calc(12px + var(--safe-top)) 16px 12px;
-                background: var(--bg-cream);
+                padding: calc(10px + var(--safe-top)) 16px 12px;
+                background: var(--nav-bg);
+                backdrop-filter: blur(20px) saturate(180%);
+                -webkit-backdrop-filter: blur(20px) saturate(180%);
                 position: sticky;
                 top: 0;
                 z-index: 50;
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                border-bottom: 1px solid var(--border);
+                border-bottom: 0.5px solid var(--border);
               }
-              .brand-row {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-              }
-              .header-logo-svg {
-                width: 40px;
-                height: 40px;
-                flex-shrink: 0;
-              }
+              .brand-row { display: flex; align-items: center; gap: 10px; }
+              .header-logo-svg { width: 38px; height: 38px; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.12); border-radius: 11px; }
               .brand-title {
                 font-family: 'Playfair Display', serif;
                 font-size: 19px;
@@ -362,34 +362,28 @@ jobs:
                 color: var(--espresso);
                 line-height: 1.15;
               }
-              .brand-sub {
-                font-size: 11px;
-                color: var(--text-muted);
-                margin-top: 2px;
-              }
-              .header-actions {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-              }
+              .brand-sub { font-size: 11.5px; color: var(--text-muted); font-weight: 500; margin-top: 2px; }
+              .header-actions { display: flex; align-items: center; gap: 7px; }
               .theme-pill-btn {
-                padding: 7px 11px;
-                border-radius: 12px;
-                border: 1px solid var(--border);
+                height: 36px;
+                padding: 0 12px;
+                border-radius: 999px;
+                border: 0.5px solid var(--border);
                 background: var(--bg-card);
                 color: var(--espresso);
                 font-size: 12px;
                 font-weight: 700;
                 display: flex;
                 align-items: center;
-                gap: 4px;
+                gap: 5px;
                 cursor: pointer;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.03);
               }
               .icon-btn {
                 width: 36px;
                 height: 36px;
-                border-radius: 12px;
-                border: 1px solid var(--border);
+                border-radius: 50%;
+                border: 0.5px solid var(--border);
                 background: var(--bg-card);
                 color: var(--espresso);
                 display: flex;
@@ -397,42 +391,30 @@ jobs:
                 justify-content: center;
                 font-size: 15px;
                 cursor: pointer;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.03);
               }
-              .container {
-                padding: 15px 15px 24px;
-                max-width: 540px;
-                margin: 0 auto;
-              }
+              .container { padding: 16px 16px 24px; max-width: 540px; margin: 0 auto; }
               .tab-panel { display: none; }
-              .tab-panel.active { display: block; animation: floatUp 0.25s ease-out; }
+              .tab-panel.active { display: block; animation: floatUp 0.24s ease-out; }
               .calendar-card {
                 background: var(--bg-card);
-                border-radius: 22px;
-                padding: 15px;
-                border: 1px solid var(--border);
+                border-radius: 24px;
+                padding: 16px;
+                border: 0.5px solid var(--border);
                 box-shadow: var(--shadow-card);
                 margin-bottom: 18px;
               }
-              .cal-nav {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                margin-bottom: 14px;
-              }
-              .cal-month-label {
-                font-family: 'Playfair Display', serif;
-                font-size: 18px;
-                font-weight: 700;
-              }
+              .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+              .cal-month-label { font-family: 'Playfair Display', serif; font-size: 19px; font-weight: 700; }
               .cal-nav-group { display: flex; gap: 6px; }
               .cal-btn {
-                padding: 6px 11px;
+                padding: 6px 12px;
                 border-radius: 10px;
-                border: 1px solid var(--border);
+                border: 0.5px solid var(--border);
                 background: var(--bg-subtle);
                 color: var(--espresso);
                 font-size: 13px;
-                font-weight: 600;
+                font-weight: 700;
                 cursor: pointer;
               }
               .weekdays {
@@ -444,14 +426,10 @@ jobs:
                 color: var(--text-muted);
                 margin-bottom: 8px;
               }
-              .days-grid {
-                display: grid;
-                grid-template-columns: repeat(7, 1fr);
-                gap: 5px;
-              }
+              .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
               .day-cell {
-                min-height: 58px;
-                border-radius: 12px;
+                min-height: 60px;
+                border-radius: 13px;
                 border: 1px solid transparent;
                 background: var(--bg-subtle);
                 padding: 5px 3px;
@@ -459,28 +437,25 @@ jobs:
                 flex-direction: column;
                 align-items: center;
                 cursor: pointer;
+                transition: transform 0.12s ease;
               }
+              .day-cell:active { transform: scale(0.94); }
               .day-cell.empty { background: transparent; cursor: default; }
               .day-cell.today { border-color: var(--rose); }
               .day-cell.selected {
                 background: var(--espresso);
                 color: var(--bg-cream);
                 border-color: var(--espresso);
+                box-shadow: 0 4px 12px rgba(30, 21, 19, 0.22);
               }
               .day-num { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
-              .day-pills {
-                display: flex;
-                flex-direction: column;
-                gap: 2px;
-                width: 100%;
-                align-items: center;
-              }
+              .day-pills { display: flex; flex-direction: column; gap: 2px; width: 100%; align-items: center; }
               .mini-time {
-                font-size: 9.5px;
+                font-size: 9px;
                 font-weight: 700;
-                padding: 1px 4px;
+                padding: 1px 3px;
                 border-radius: 5px;
-                width: 92%;
+                width: 94%;
                 text-align: center;
                 white-space: nowrap;
                 overflow: hidden;
@@ -492,173 +467,199 @@ jobs:
               .day-cell.selected .mini-time.nail { background: var(--gold); color: #1A1210; }
               .more-badge { font-size: 9px; font-weight: 700; color: var(--text-muted); }
               .day-cell.selected .more-badge { color: var(--gold); }
-              .section-header {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                margin-bottom: 12px;
-              }
-              .section-title { font-size: 15.5px; font-weight: 700; }
+              .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+              .section-title { font-size: 16px; font-weight: 800; letter-spacing: -0.2px; }
               .count-pill {
                 font-size: 12px;
                 font-weight: 700;
-                padding: 4px 10px;
+                padding: 4px 11px;
                 border-radius: 999px;
                 background: var(--rose-light);
                 color: var(--rose);
               }
               .apt-card {
                 background: var(--bg-card);
-                border-radius: 18px;
-                padding: 14px 15px;
-                border: 1px solid var(--border);
-                margin-bottom: 10px;
+                border-radius: 20px;
+                padding: 15px;
+                border: 0.5px solid var(--border);
+                margin-bottom: 11px;
                 box-shadow: var(--shadow-card);
+              }
+              .apt-card.home-visit-card {
+                border-left: 4px solid var(--home-orange);
               }
               .apt-top {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                margin-bottom: 9px;
+                margin-bottom: 10px;
+                gap: 6px;
+                flex-wrap: wrap;
+              }
+              .apt-top-left {
+                display: flex;
+                align-items: center;
                 gap: 6px;
                 flex-wrap: wrap;
               }
               .time-badge {
-                font-size: 13.5px;
-                font-weight: 700;
+                font-size: 13px;
+                font-weight: 800;
                 color: var(--espresso);
                 background: var(--bg-subtle);
                 padding: 5px 10px;
                 border-radius: 10px;
-                border: 1px solid var(--border);
               }
-              .live-badge {
-                font-size: 11px;
+              .loc-badge {
+                font-size: 11.5px;
                 font-weight: 700;
-                padding: 3px 8px;
-                border-radius: 7px;
-                background: var(--gold-light);
-                color: var(--gold);
+                padding: 4px 9px;
+                border-radius: 9px;
+                display: inline-flex;
+                align-items: center;
+                gap: 3px;
+              }
+              .loc-badge.studio {
+                background: var(--bg-subtle);
+                color: var(--espresso-soft);
+              }
+              .loc-badge.home {
+                background: var(--home-orange-bg);
+                color: var(--home-orange);
               }
               .service-tag {
                 font-size: 12px;
                 font-weight: 700;
                 padding: 4px 10px;
-                border-radius: 8px;
+                border-radius: 9px;
               }
               .service-tag.makeup { background: var(--rose-light); color: var(--rose); }
               .service-tag.nail { background: var(--gold-light); color: var(--gold); }
-              .service-tag.combo { background: rgba(155, 114, 207, 0.18); color: #9B72CF; }
+              .service-tag.combo { background: rgba(155, 114, 207, 0.16); color: #9B72CF; }
               .apt-body { display: flex; gap: 12px; align-items: flex-start; }
               .apt-photo {
-                width: 58px;
-                height: 58px;
+                width: 60px;
+                height: 60px;
                 border-radius: 14px;
                 object-fit: cover;
-                border: 1px solid var(--border);
+                border: 0.5px solid var(--border);
                 flex-shrink: 0;
               }
               .apt-info { flex: 1; min-width: 0; }
-              .customer-name { font-size: 16px; font-weight: 700; margin-bottom: 4px; color: var(--espresso); }
+              .customer-name { font-size: 16.5px; font-weight: 800; margin-bottom: 3px; color: var(--espresso); letter-spacing: -0.2px; }
+              .apt-meta-line {
+                font-size: 12.5px;
+                font-weight: 600;
+                color: var(--espresso-soft);
+                margin-top: 3px;
+                display: flex;
+                align-items: center;
+                gap: 5px;
+              }
+              .apt-meta-line.address-line {
+                color: var(--home-orange);
+                font-weight: 700;
+              }
               .apt-note {
                 font-size: 13px;
                 color: var(--espresso-soft);
                 line-height: 1.45;
                 background: var(--bg-subtle);
-                padding: 7px 10px;
-                border-radius: 10px;
-                margin-top: 4px;
-              }
-              .alarm-info-row {
-                font-size: 11.5px;
-                color: var(--gold);
-                font-weight: 600;
+                padding: 8px 11px;
+                border-radius: 11px;
                 margin-top: 6px;
               }
+              .alarm-info-row { font-size: 11.5px; color: var(--gold); font-weight: 700; margin-top: 7px; }
               .apt-actions {
                 display: flex;
-                justify-content: flex-end;
+                align-items: center;
+                justify-content: space-between;
                 gap: 8px;
-                margin-top: 10px;
-                padding-top: 8px;
-                border-top: 1px dashed var(--border);
+                margin-top: 11px;
+                padding-top: 9px;
+                border-top: 0.5px solid var(--border);
+              }
+              .apt-actions-right {
+                display: flex;
+                gap: 7px;
+                margin-left: auto;
+              }
+              .btn-call-quick {
+                padding: 6px 13px;
+                border-radius: 10px;
+                border: 0.5px solid rgba(24, 134, 84, 0.3);
+                background: var(--call-green-bg);
+                color: var(--call-green);
+                font-size: 12.5px;
+                font-weight: 800;
+                text-decoration: none;
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                cursor: pointer;
               }
               .btn-mini {
-                padding: 5px 11px;
-                border-radius: 8px;
-                border: 1px solid var(--border);
+                padding: 6px 12px;
+                border-radius: 9px;
+                border: 0.5px solid var(--border);
                 background: var(--bg-subtle);
                 font-size: 12px;
-                font-weight: 600;
+                font-weight: 700;
                 color: var(--espresso-soft);
                 cursor: pointer;
               }
               .btn-mini.danger {
                 color: #E05252;
-                border-color: rgba(224, 82, 82, 0.3);
+                border-color: rgba(224, 82, 82, 0.25);
                 background: rgba(224, 82, 82, 0.08);
               }
               .gap-indicator {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 11px;
+                font-size: 11.5px;
                 font-weight: 600;
                 color: var(--text-muted);
-                margin: -3px 0 7px;
+                margin: -2px 0 8px;
               }
               .gap-indicator.warn {
                 color: #E05252;
                 background: rgba(224, 82, 82, 0.12);
                 padding: 5px 10px;
-                border-radius: 9px;
-                margin: 2px 0 8px;
+                border-radius: 10px;
+                margin: 2px 0 9px;
               }
               .search-box {
                 width: 100%;
-                padding: 12px 14px;
-                border-radius: 14px;
-                border: 1px solid var(--border);
+                padding: 13px 15px;
+                border-radius: 15px;
+                border: 0.5px solid var(--border);
                 background: var(--bg-card);
                 color: var(--espresso);
                 font-size: 14px;
                 margin-bottom: 10px;
                 outline: none;
+                box-shadow: var(--shadow-card);
               }
-              .filter-row {
-                display: flex;
-                gap: 6px;
-                overflow-x: auto;
-                padding-bottom: 8px;
-                margin-bottom: 10px;
-              }
+              .filter-row { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 10px; }
               .filter-chip {
-                padding: 7px 13px;
+                padding: 7px 14px;
                 border-radius: 999px;
-                border: 1px solid var(--border);
+                border: 0.5px solid var(--border);
                 background: var(--bg-card);
-                font-size: 12px;
-                font-weight: 600;
+                font-size: 12.5px;
+                font-weight: 700;
                 color: var(--espresso-soft);
                 white-space: nowrap;
                 cursor: pointer;
               }
-              .filter-chip.active {
-                background: var(--espresso);
-                color: var(--bg-cream);
-                border-color: var(--espresso);
-              }
-              .date-group-label {
-                font-size: 13px;
-                font-weight: 700;
-                color: var(--rose);
-                margin: 14px 0 8px;
-              }
+              .filter-chip.active { background: var(--espresso); color: var(--bg-cream); border-color: var(--espresso); }
+              .date-group-label { font-size: 13px; font-weight: 800; color: var(--rose); margin: 14px 0 8px; }
               .status-banner {
                 background: var(--gold-light);
-                border: 1px solid rgba(224, 182, 110, 0.4);
-                border-radius: 16px;
-                padding: 12px 14px;
+                border: 0.5px solid rgba(224, 182, 110, 0.45);
+                border-radius: 18px;
+                padding: 13px 15px;
                 margin-bottom: 12px;
                 display: flex;
                 align-items: center;
@@ -669,38 +670,33 @@ jobs:
               }
               .setting-card {
                 background: var(--bg-card);
-                border-radius: 18px;
+                border-radius: 20px;
                 padding: 16px;
-                border: 1px solid var(--border);
+                border: 0.5px solid var(--border);
                 margin-bottom: 12px;
                 box-shadow: var(--shadow-card);
               }
-              .setting-row {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 12px;
-              }
+              .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
               .setting-title { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
               .setting-desc { font-size: 12.5px; color: var(--text-muted); line-height: 1.4; }
               select.styled-select, input[type="time"].styled-input {
-                padding: 8px 10px;
-                border-radius: 10px;
-                border: 1px solid var(--border);
+                padding: 8px 11px;
+                border-radius: 11px;
+                border: 0.5px solid var(--border);
                 background: var(--bg-subtle);
                 font-size: 14px;
-                font-weight: 600;
+                font-weight: 700;
                 color: var(--espresso);
               }
               .btn-primary-full {
                 width: 100%;
-                padding: 14px;
-                border-radius: 14px;
+                padding: 15px;
+                border-radius: 15px;
                 border: none;
                 background: var(--espresso);
                 color: var(--bg-cream);
-                font-size: 14px;
-                font-weight: 700;
+                font-size: 15px;
+                font-weight: 800;
                 cursor: pointer;
                 margin-top: 6px;
               }
@@ -710,50 +706,61 @@ jobs:
                 left: 0;
                 right: 0;
                 background: var(--nav-bg);
-                backdrop-filter: blur(14px);
-                -webkit-backdrop-filter: blur(14px);
-                border-top: 1px solid var(--border);
-                display: flex;
+                backdrop-filter: blur(22px) saturate(180%);
+                -webkit-backdrop-filter: blur(22px) saturate(180%);
+                border-top: 0.5px solid var(--border);
+                display: grid;
+                grid-template-columns: repeat(5, 1fr);
                 align-items: center;
-                justify-content: space-around;
-                padding: 8px 12px calc(8px + var(--safe-bottom));
+                padding: 6px 6px calc(6px + var(--safe-bottom));
                 z-index: 80;
               }
               .nav-item {
-                flex: 1;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
+                justify-content: center;
                 gap: 3px;
                 border: none;
                 background: none;
                 color: var(--text-muted);
-                font-size: 11px;
+                font-size: 10.5px;
                 font-weight: 600;
                 cursor: pointer;
+                padding: 4px 0;
               }
-              .nav-item.active { color: var(--espresso); font-weight: 700; }
-              .nav-icon { font-size: 19px; }
-              .fab-add {
-                width: 52px;
-                height: 52px;
-                border-radius: 18px;
-                border: none;
-                background: linear-gradient(135deg, #D9737E 0%, #A94B56 100%);
-                color: #FFF;
-                font-size: 26px;
-                font-weight: 600;
+              .nav-item.active { color: var(--rose); font-weight: 800; }
+              .nav-icon { font-size: 19px; line-height: 1; }
+              .fab-center-slot {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                box-shadow: 0 8px 18px rgba(200, 109, 119, 0.4);
-                cursor: pointer;
-                margin-top: -18px;
               }
+              .fab-add {
+                width: 54px;
+                height: 54px;
+                border-radius: 50%;
+                border: 3px solid var(--bg-cream);
+                background: linear-gradient(135deg, #DC7682 0%, #B04854 100%);
+                color: #FFF;
+                font-size: 28px;
+                font-weight: 500;
+                line-height: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 8px 20px rgba(176, 72, 84, 0.42);
+                cursor: pointer;
+                margin-top: -22px;
+                transition: transform 0.15s cubic-bezier(0.22, 1, 0.36, 1);
+              }
+              .fab-add:active { transform: scale(0.92); }
               .modal-backdrop {
                 position: fixed;
                 inset: 0;
-                background: rgba(12, 8, 8, 0.68);
+                background: rgba(12, 8, 8, 0.65);
+                backdrop-filter: blur(4px);
+                -webkit-backdrop-filter: blur(4px);
                 z-index: 200;
                 display: none;
                 align-items: flex-end;
@@ -765,40 +772,35 @@ jobs:
                 color: var(--espresso);
                 width: 100%;
                 max-width: 540px;
-                border-radius: 24px 24px 0 0;
+                border-radius: 26px 26px 0 0;
                 padding: 20px 20px calc(24px + var(--safe-bottom));
                 max-height: 92vh;
                 overflow-y: auto;
-                border-top: 1px solid var(--border);
+                border-top: 0.5px solid var(--border);
               }
-              .modal-header {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                margin-bottom: 14px;
-              }
-              .modal-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; }
+              .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+              .modal-title { font-family: 'Playfair Display', serif; font-size: 21px; font-weight: 700; }
               .form-group { margin-bottom: 12px; }
               .form-label { display: block; font-size: 12.5px; font-weight: 700; margin-bottom: 5px; color: var(--espresso-soft); }
               .form-control {
                 width: 100%;
-                padding: 11px 12px;
-                border-radius: 12px;
-                border: 1px solid var(--border);
+                padding: 12px 13px;
+                border-radius: 13px;
+                border: 0.5px solid var(--border);
                 background: var(--bg-subtle);
-                font-size: 14px;
+                font-size: 14.5px;
                 font-family: inherit;
                 color: var(--espresso);
               }
               .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
               .quick-times { display: flex; gap: 6px; overflow-x: auto; padding-top: 6px; }
               .q-time-btn {
-                padding: 5px 9px;
-                border-radius: 8px;
-                border: 1px solid var(--border);
+                padding: 6px 10px;
+                border-radius: 9px;
+                border: 0.5px solid var(--border);
                 background: var(--bg-subtle);
                 color: var(--espresso-soft);
-                font-size: 11.5px;
+                font-size: 12px;
                 font-weight: 700;
                 cursor: pointer;
                 white-space: nowrap;
@@ -806,18 +808,19 @@ jobs:
               .overlap-alert {
                 display: none;
                 margin-top: 6px;
-                padding: 8px 10px;
+                padding: 8px 11px;
                 border-radius: 10px;
                 background: rgba(224, 82, 82, 0.14);
                 color: #E05252;
                 font-size: 12px;
-                font-weight: 600;
+                font-weight: 700;
               }
               .service-selector { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-              .srv-opt {
-                padding: 10px 6px;
-                border-radius: 12px;
-                border: 1px solid var(--border);
+              .location-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+              .srv-opt, .loc-opt {
+                padding: 11px 6px;
+                border-radius: 13px;
+                border: 0.5px solid var(--border);
                 background: var(--bg-subtle);
                 text-align: center;
                 font-size: 13px;
@@ -825,13 +828,16 @@ jobs:
                 cursor: pointer;
               }
               .srv-opt.selected { background: var(--espresso); color: var(--bg-cream); border-color: var(--espresso); }
+              .loc-opt.selected.studio-sel { background: var(--espresso); color: var(--bg-cream); border-color: var(--espresso); }
+              .loc-opt.selected.home-sel { background: var(--home-orange); color: #FFF; border-color: var(--home-orange); }
               .empty-state {
                 text-align: center;
-                padding: 36px 16px;
+                padding: 38px 18px;
                 color: var(--text-muted);
                 font-size: 14px;
+                line-height: 1.5;
                 background: var(--bg-card);
-                border-radius: 18px;
+                border-radius: 20px;
                 border: 1px dashed var(--border);
               }
             </style>
@@ -852,7 +858,7 @@ jobs:
                 <div class="bespoke-logo-box">
                   <div class="ring-spin-1"></div>
                   <div class="ring-spin-2"></div>
-                  <svg width="96" height="96" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg width="94" height="94" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <defs>
                       <linearGradient id="goldGrad" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
                         <stop offset="0%" stop-color="#FFF2CC"/>
@@ -892,7 +898,7 @@ jobs:
                 </div>
               </div>
               <div class="header-actions">
-                <button class="theme-pill-btn" id="theme-toggle-btn" onclick="toggleTheme()">🌙 Nền tối</button>
+                <button class="theme-pill-btn" id="theme-toggle-btn" onclick="toggleTheme()">🌙 Tối</button>
                 <button class="icon-btn" title="Xem ảnh bìa" onclick="openCover()">🖼️</button>
               </div>
             </header>
@@ -919,12 +925,13 @@ jobs:
                 <div id="day-appointments-list"></div>
               </section>
               <section id="tab-all" class="tab-panel">
-                <input type="text" id="search-input" class="search-box" placeholder="Tìm tên khách hoặc ghi chú..." oninput="renderAllList()" />
+                <input type="text" id="search-input" class="search-box" placeholder="🔍 Tìm tên khách, SĐT, địa chỉ hoặc ghi chú..." oninput="renderAllList()" />
                 <div class="filter-row">
                   <button class="filter-chip active" data-filter="upcoming" onclick="setFilter('upcoming', this)">Sắp tới &amp; Hôm nay</button>
                   <button class="filter-chip" data-filter="all" onclick="setFilter('all', this)">Tất cả</button>
-                  <button class="filter-chip" data-filter="Makeup" onclick="setFilter('Makeup', this)">Makeup</button>
-                  <button class="filter-chip" data-filter="Nail" onclick="setFilter('Nail', this)">Nail</button>
+                  <button class="filter-chip" data-filter="home" onclick="setFilter('home', this)">🛵 Đến nhà khách</button>
+                  <button class="filter-chip" data-filter="Makeup" onclick="setFilter('Makeup', this)">💄 Makeup</button>
+                  <button class="filter-chip" data-filter="Nail" onclick="setFilter('Nail', this)">💅 Nail</button>
                   <button class="filter-chip" data-filter="past" onclick="setFilter('past', this)">Đã qua</button>
                 </div>
                 <div id="all-appointments-list"></div>
@@ -937,10 +944,10 @@ jobs:
                 <div class="setting-card">
                   <div class="setting-row">
                     <div>
-                      <div class="setting-title">🔔 Báo đúng giờ hẹn (VD: 19:20 báo 19:20)</div>
+                      <div class="setting-title">🔔 Báo đúng giờ hẹn khách</div>
                       <div class="setting-desc">Tự bật popup kèm chuông ngay khi tới đúng giờ làm</div>
                     </div>
-                    <input type="checkbox" id="enable-exact" checked onchange="saveSettings()" style="width:22px;height:22px;accent-color:#C86D77;" />
+                    <input type="checkbox" id="enable-exact" checked onchange="saveSettings()" style="width:22px;height:22px;accent-color:#C86470;" />
                   </div>
                 </div>
                 <div class="setting-card">
@@ -964,7 +971,7 @@ jobs:
                       <div class="setting-title">📅 Báo tổng khách ngày mai</div>
                       <div class="setting-desc">Nhắc danh sách khách đặt lịch vào buổi tối hôm trước</div>
                     </div>
-                    <input type="checkbox" id="enable-summary" checked onchange="saveSettings()" style="width:22px;height:22px;accent-color:#C86D77;" />
+                    <input type="checkbox" id="enable-summary" checked onchange="saveSettings()" style="width:22px;height:22px;accent-color:#C86470;" />
                   </div>
                   <div class="setting-row">
                     <div class="setting-desc">Giờ báo tổng buổi tối</div>
@@ -977,29 +984,30 @@ jobs:
                       <div class="setting-title">🌙 Chế độ Nền Tối (Dark Mode)</div>
                       <div class="setting-desc">Giao diện nền đen ánh kim dịu mắt ban đêm</div>
                     </div>
-                    <input type="checkbox" id="dark-mode-checkbox" onchange="toggleTheme(this.checked)" style="width:22px;height:22px;accent-color:#C86D77;" />
+                    <input type="checkbox" id="dark-mode-checkbox" onchange="toggleTheme(this.checked)" style="width:22px;height:22px;accent-color:#C86470;" />
                   </div>
-                </div>
-                <div class="setting-card">
-                  <div class="setting-title">Kiểm tra chuông báo màn hình khoá</div>
-                  <div class="setting-desc" style="margin-bottom: 10px;">Bấm nút dưới đây rồi khoá màn hình iPhone lại ngay, sau 5 giây popup sẽ đổ chuông.</div>
-                  <button class="btn-primary-full" onclick="sendTestNotification()">🔔 Test thông báo màn hình khoá (5 giây)</button>
                 </div>
               </section>
             </main>
             <nav class="bottom-nav">
-              <button class="nav-item active" onclick="switchTab('calendar', this)">
+              <button class="nav-item active" id="nav-cal" onclick="switchTab('calendar', this)">
                 <span class="nav-icon">📅</span>
                 <span>Lịch tháng</span>
               </button>
-              <button class="fab-add" onclick="openModal()" title="Thêm lịch mới">+</button>
-              <button class="nav-item" onclick="switchTab('all', this)">
-                <span class="nav-icon">📋</span>
-                <span>Tổng lịch đặt</span>
+              <button class="nav-item" id="nav-today" onclick="jumpTodayTab(this)">
+                <span class="nav-icon">✨</span>
+                <span>Hôm nay</span>
               </button>
-              <button class="nav-item" onclick="switchTab('notify', this)">
+              <div class="fab-center-slot">
+                <button class="fab-add" onclick="openModal()" title="Thêm lịch mới">+</button>
+              </div>
+              <button class="nav-item" id="nav-all" onclick="switchTab('all', this)">
+                <span class="nav-icon">📋</span>
+                <span>Tổng lịch</span>
+              </button>
+              <button class="nav-item" id="nav-notify" onclick="switchTab('notify', this)">
                 <span class="nav-icon">🔔</span>
-                <span>Thông báo</span>
+                <span>Cài đặt</span>
               </button>
             </nav>
             <div class="modal-backdrop" id="apt-modal">
@@ -1009,9 +1017,15 @@ jobs:
                   <button class="icon-btn" onclick="closeModal()">✕</button>
                 </div>
                 <input type="hidden" id="edit-id" />
-                <div class="form-group">
-                  <label class="form-label">Tên khách hàng *</label>
-                  <input type="text" id="inp-name" class="form-control" placeholder="VD: Chị Thảo (Em chị Lan)" />
+                <div class="form-row-2">
+                  <div class="form-group">
+                    <label class="form-label">Tên khách hàng *</label>
+                    <input type="text" id="inp-name" class="form-control" placeholder="VD: Chị Thảo" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Số điện thoại (Gọi nhanh)</label>
+                    <input type="tel" id="inp-phone" class="form-control" placeholder="VD: 0909..." />
+                  </div>
                 </div>
                 <div class="form-row-2">
                   <div class="form-group">
@@ -1044,8 +1058,19 @@ jobs:
                   </div>
                 </div>
                 <div class="form-group">
-                  <label class="form-label">Ghi chú thêm (Đặc điểm nhận dạng, mẫu, địa điểm...)</label>
-                  <textarea id="inp-note" class="form-control" rows="2" placeholder="VD: Khách quen giới thiệu, makeup đi tiệc tone cam đào..."></textarea>
+                  <label class="form-label">Địa điểm làm?</label>
+                  <div class="location-selector">
+                    <div class="loc-opt selected studio-sel" data-loc="studio" onclick="selectLocation('studio', this)">🏠 Tại tiệm</div>
+                    <div class="loc-opt home-sel" data-loc="home" onclick="selectLocation('home', this)">🛵 Đến nhà khách</div>
+                  </div>
+                </div>
+                <div class="form-group" id="address-group" style="display:none;">
+                  <label class="form-label">📍 Địa chỉ nhà khách / Khu vực</label>
+                  <input type="text" id="inp-address" class="form-control" placeholder="VD: Hẻm 120 Lê Văn Sỹ (gần nhà thờ)..." />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Ghi chú thêm (Đặc điểm nhận dạng, mẫu...)</label>
+                  <textarea id="inp-note" class="form-control" rows="2" placeholder="VD: Khách chị Lan giới thiệu, tone cam đào..."></textarea>
                 </div>
                 <div class="form-group">
                   <label class="form-label">Ảnh khách / Ảnh mẫu (Không bắt buộc)</label>
@@ -1065,6 +1090,7 @@ jobs:
               let isDark = localStorage.getItem(THEME_KEY) === 'dark';
               let currentFilter = 'upcoming';
               let selectedService = 'Makeup';
+              let selectedLocation = 'studio';
               let currentPhotoBase64 = '';
               let firedInAppIds = {};
               const nowObj = new Date();
@@ -1075,12 +1101,12 @@ jobs:
                 const t = document.getElementById('toast-banner');
                 t.textContent = msg;
                 t.classList.add('show');
-                setTimeout(() => t.classList.remove('show'), 4200);
+                setTimeout(() => t.classList.remove('show'), 4000);
               }
               function applyTheme(dark) {
                 isDark = dark;
                 document.body.classList.toggle('dark-mode', isDark);
-                document.getElementById('theme-toggle-btn').innerHTML = isDark ? '☀️ Nền sáng' : '🌙 Nền tối';
+                document.getElementById('theme-toggle-btn').innerHTML = isDark ? '☀️ Sáng' : '🌙 Tối';
                 const cb = document.getElementById('dark-mode-checkbox');
                 if (cb) cb.checked = isDark;
                 localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
@@ -1129,7 +1155,7 @@ jobs:
                 if (todayList.length === 0) {
                   el.textContent = `Hôm nay (${formatDateVi(todayStr)}) chưa có khách đặt lịch.`;
                 } else {
-                  const preview = todayList.map(a => `${a.time} ${a.customerName}`).join(' • ');
+                  const preview = todayList.map(a => `${a.time} ${a.customerName}${a.locationType === 'home' ? ' (🛵Tận nhà)' : ''}`).join(' • ');
                   el.textContent = `Hôm nay có ${todayList.length} khách: ${preview}`;
                 }
               }
@@ -1137,9 +1163,17 @@ jobs:
                 document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
                 document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
                 document.getElementById('tab-' + tab).classList.add('active');
-                btn.classList.add('active');
+                if (btn) btn.classList.add('active');
                 if (tab === 'all') renderAllList();
                 if (tab === 'notify') syncIosNotifications();
+              }
+              function jumpTodayTab(btn) {
+                document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                document.getElementById('tab-calendar').classList.add('active');
+                btn.classList.add('active');
+                goToday();
+                window.scrollTo({ top: 260, behavior: 'smooth' });
               }
               function changeMonth(delta) {
                 viewMonth += delta;
@@ -1179,7 +1213,8 @@ jobs:
                   let pillsHtml = '';
                   dayApts.slice(0, 2).forEach(a => {
                     const cls = a.service.toLowerCase().includes('nail') && !a.service.toLowerCase().includes('makeup') ? 'nail' : 'makeup';
-                    pillsHtml += `<span class="mini-time ${cls}">${a.time}</span>`;
+                    const locIcon = a.locationType === 'home' ? '🛵' : '';
+                    pillsHtml += `<span class="mini-time ${cls}">${locIcon}${a.time}</span>`;
                   });
                   if (dayApts.length > 2) {
                     pillsHtml += `<span class="more-badge">+${dayApts.length - 2} khách</span>`;
@@ -1197,6 +1232,16 @@ jobs:
                 const [h, m] = timeStr.split(':').map(Number);
                 return h * 60 + m;
               }
+              function callCustomer(phone) {
+                if (!phone) return;
+                const clean = String(phone).replace(/[^0-9+]/g, '');
+                if (!clean) return;
+                if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.iosNotify) {
+                  window.webkit.messageHandlers.iosNotify.postMessage({ action: 'callPhone', phone: clean });
+                } else {
+                  window.location.href = 'tel:' + clean;
+                }
+              }
               function renderDayAppointments() {
                 const todayStr = toDateStr(new Date());
                 const prefix = selectedDateStr === todayStr ? 'Hôm nay • ' : '';
@@ -1205,7 +1250,7 @@ jobs:
                 document.getElementById('selected-day-count').textContent = `${list.length} khách`;
                 const container = document.getElementById('day-appointments-list');
                 if (list.length === 0) {
-                  container.innerHTML = `<div class="empty-state">Ngày này chưa có lịch hẹn nào.<br/>Bấm nút <strong>+</strong> bên dưới để ghi chú khách đặt lịch.</div>`;
+                  container.innerHTML = `<div class="empty-state">Ngày này chưa có lịch hẹn nào.<br/>Bấm nút <strong>+</strong> ở chính giữa thanh dưới để thêm lịch.</div>`;
                   return;
                 }
                 let html = '';
@@ -1229,26 +1274,43 @@ jobs:
                 let srvClass = 'makeup';
                 if (apt.service === 'Nail') srvClass = 'nail';
                 else if (apt.service.includes('&')) srvClass = 'combo';
+                const isHome = apt.locationType === 'home';
+                const locBadgeHtml = isHome
+                  ? `<span class="loc-badge home">🛵 Đến nhà khách</span>`
+                  : `<span class="loc-badge studio">🏠 Tại tiệm</span>`;
                 const photoHtml = apt.photo ? `<img src="${apt.photo}" class="apt-photo" alt="Ảnh khách" />` : '';
+                const addressHtml = (isHome && apt.address) ? `<div class="apt-meta-line address-line">📍 ${escapeHtml(apt.address)}</div>` : '';
+                const phoneLineHtml = apt.phone ? `<div class="apt-meta-line">📱 ${escapeHtml(apt.phone)}</div>` : '';
                 const noteHtml = apt.note ? `<div class="apt-note">📝 ${escapeHtml(apt.note)}</div>` : '';
                 const remText = settings.remindBeforeMinutes > 0 ? `Báo trước ${settings.remindBeforeMinutes}p & đúng ${apt.time}` : `Báo đúng ${apt.time}`;
+                const callBtnHtml = apt.phone
+                  ? `<button class="btn-call-quick" onclick="callCustomer('${escapeHtml(apt.phone)}')">📞 Gọi khách</button>`
+                  : `<span></span>`;
                 return `
-                  <div class="apt-card">
+                  <div class="apt-card ${isHome ? 'home-visit-card' : ''}">
                     <div class="apt-top">
-                      <span class="time-badge">⏰ ${formatTimeVi(apt.time)}</span>
+                      <div class="apt-top-left">
+                        <span class="time-badge">⏰ ${formatTimeVi(apt.time)}</span>
+                        ${locBadgeHtml}
+                      </div>
                       <span class="service-tag ${srvClass}">${escapeHtml(apt.service)}</span>
                     </div>
                     <div class="apt-body">
                       ${photoHtml}
                       <div class="apt-info">
                         <div class="customer-name">${escapeHtml(apt.customerName)}</div>
+                        ${phoneLineHtml}
+                        ${addressHtml}
                         ${noteHtml}
                         <div class="alarm-info-row">🔔 ${remText}</div>
                       </div>
                     </div>
                     <div class="apt-actions">
-                      <button class="btn-mini" onclick="editAppointment('${apt.id}')">✏️ Sửa</button>
-                      <button class="btn-mini danger" onclick="deleteAppointment('${apt.id}')">🗑️ Xoá</button>
+                      ${callBtnHtml}
+                      <div class="apt-actions-right">
+                        <button class="btn-mini" onclick="editAppointment('${apt.id}')">✏️ Sửa</button>
+                        <button class="btn-mini danger" onclick="deleteAppointment('${apt.id}')">🗑️ Xoá</button>
+                      </div>
                     </div>
                   </div>
                 `;
@@ -1263,10 +1325,15 @@ jobs:
                 const q = document.getElementById('search-input').value.trim().toLowerCase();
                 const todayStr = toDateStr(new Date());
                 let filtered = appointments.filter(a => {
-                  const matchText = !q || a.customerName.toLowerCase().includes(q) || (a.note && a.note.toLowerCase().includes(q));
+                  const matchText = !q ||
+                    a.customerName.toLowerCase().includes(q) ||
+                    (a.phone && a.phone.toLowerCase().includes(q)) ||
+                    (a.address && a.address.toLowerCase().includes(q)) ||
+                    (a.note && a.note.toLowerCase().includes(q));
                   if (!matchText) return false;
                   if (currentFilter === 'upcoming') return a.date >= todayStr;
                   if (currentFilter === 'past') return a.date < todayStr;
+                  if (currentFilter === 'home') return a.locationType === 'home';
                   if (currentFilter === 'Makeup') return a.service.includes('Makeup');
                   if (currentFilter === 'Nail') return a.service.includes('Nail');
                   return true;
@@ -1294,6 +1361,12 @@ jobs:
                 document.querySelectorAll('.srv-opt').forEach(o => o.classList.remove('selected'));
                 el.classList.add('selected');
               }
+              function selectLocation(loc, el) {
+                selectedLocation = loc;
+                document.querySelectorAll('.loc-opt').forEach(o => o.classList.remove('selected'));
+                el.classList.add('selected');
+                document.getElementById('address-group').style.display = loc === 'home' ? 'block' : 'none';
+              }
               function setQuickTime(t) {
                 document.getElementById('inp-time').value = t;
                 checkOverlapWarning();
@@ -1317,6 +1390,8 @@ jobs:
                 document.getElementById('modal-title').textContent = 'Thêm Lịch Đặt Mới';
                 document.getElementById('edit-id').value = '';
                 document.getElementById('inp-name').value = '';
+                document.getElementById('inp-phone').value = '';
+                document.getElementById('inp-address').value = '';
                 document.getElementById('inp-date').value = selectedDateStr;
                 const nextTime = new Date(Date.now() + 5 * 60000);
                 document.getElementById('inp-time').value = `${String(nextTime.getHours()).padStart(2,'0')}:${String(nextTime.getMinutes()).padStart(2,'0')}`;
@@ -1325,6 +1400,7 @@ jobs:
                 currentPhotoBase64 = '';
                 document.getElementById('photo-preview').style.display = 'none';
                 selectService('Makeup', document.querySelector('.srv-opt[data-srv="Makeup"]'));
+                selectLocation('studio', document.querySelector('.loc-opt[data-loc="studio"]'));
                 checkOverlapWarning();
                 document.getElementById('apt-modal').classList.add('open');
               }
@@ -1334,6 +1410,8 @@ jobs:
                 document.getElementById('modal-title').textContent = 'Sửa Lịch Hẹn';
                 document.getElementById('edit-id').value = apt.id;
                 document.getElementById('inp-name').value = apt.customerName;
+                document.getElementById('inp-phone').value = apt.phone || '';
+                document.getElementById('inp-address').value = apt.address || '';
                 document.getElementById('inp-date').value = apt.date;
                 document.getElementById('inp-time').value = apt.time;
                 document.getElementById('inp-note').value = apt.note || '';
@@ -1341,8 +1419,11 @@ jobs:
                 const prev = document.getElementById('photo-preview');
                 if (currentPhotoBase64) { prev.src = currentPhotoBase64; prev.style.display = 'block'; }
                 else { prev.style.display = 'none'; }
-                const opt = document.querySelector(`.srv-opt[data-srv="${apt.service}"]`) || document.querySelector('.srv-opt');
-                selectService(apt.service, opt);
+                const srvEl = document.querySelector(`.srv-opt[data-srv="${apt.service}"]`) || document.querySelector('.srv-opt');
+                selectService(apt.service, srvEl);
+                const locType = apt.locationType || 'studio';
+                const locEl = document.querySelector(`.loc-opt[data-loc="${locType}"]`) || document.querySelector('.loc-opt');
+                selectLocation(locType, locEl);
                 checkOverlapWarning();
                 document.getElementById('apt-modal').classList.add('open');
               }
@@ -1372,6 +1453,8 @@ jobs:
               }
               function saveAppointment() {
                 const name = document.getElementById('inp-name').value.trim();
+                const phone = document.getElementById('inp-phone').value.trim();
+                const address = document.getElementById('inp-address').value.trim();
                 const date = document.getElementById('inp-date').value;
                 const time = document.getElementById('inp-time').value;
                 const note = document.getElementById('inp-note').value.trim();
@@ -1380,20 +1463,26 @@ jobs:
                   alert('Vui lòng nhập đầy đủ Tên khách, Ngày đặt và Giờ hẹn!');
                   return;
                 }
+                const payload = {
+                  customerName: name,
+                  phone,
+                  locationType: selectedLocation,
+                  address: selectedLocation === 'home' ? address : '',
+                  date,
+                  time,
+                  service: selectedService,
+                  note,
+                  photo: currentPhotoBase64
+                };
                 if (editId) {
                   const idx = appointments.findIndex(a => a.id === editId);
                   if (idx !== -1) {
-                    appointments[idx] = { ...appointments[idx], customerName: name, date, time, service: selectedService, note, photo: currentPhotoBase64 };
+                    appointments[idx] = { ...appointments[idx], ...payload };
                   }
                 } else {
                   appointments.push({
                     id: 'apt_' + Date.now(),
-                    customerName: name,
-                    date,
-                    time,
-                    service: selectedService,
-                    note,
-                    photo: currentPhotoBase64
+                    ...payload
                   });
                 }
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(appointments));
@@ -1407,7 +1496,7 @@ jobs:
                 renderAllList();
                 updateCoverSummary();
                 syncIosNotifications();
-                showToast(`🔔 Đã hẹn báo iPhone đúng ${time} (và nhắc trước ${settings.remindBeforeMinutes}p)`);
+                showToast(`🔔 Đã lưu lịch ${name} (${time})!`);
               }
               function deleteAppointment(id) {
                 if (!confirm('Bạn có chắc muốn xoá lịch hẹn này không?')) return;
@@ -1449,17 +1538,11 @@ jobs:
                       exactTimestampMs: getExactTimestampMs(a.date, a.time),
                       customerName: a.customerName,
                       service: a.service,
+                      locationType: a.locationType || 'studio',
+                      address: a.address || '',
                       note: a.note || ''
                     }))
                   });
-                }
-              }
-              function sendTestNotification() {
-                if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.iosNotify) {
-                  window.webkit.messageHandlers.iosNotify.postMessage({ action: 'testNotification' });
-                  showToast('🔔 Đã kích hoạt! Hãy khoá màn hình iPhone ngay (5 giây)...');
-                } else {
-                  alert('Chức năng này hoạt động trên bản IPA iPhone.');
                 }
               }
               setInterval(() => {
@@ -1470,7 +1553,8 @@ jobs:
                   const key = `${a.id}_${curTime}`;
                   if (a.date === todayStr && a.time === curTime && !firedInAppIds[key]) {
                     firedInAppIds[key] = true;
-                    showToast(`🔔 ĐẾN GIỜ HẸN (${a.time}): ${a.customerName} • ${a.service}`);
+                    const locLabel = a.locationType === 'home' ? '🛵 Đến nhà khách' : '🏠 Tại tiệm';
+                    showToast(`🔔 ĐẾN GIỜ (${a.time}): ${a.customerName} • ${a.service} (${locLabel})`);
                   }
                 });
               }, 5000);
@@ -1509,30 +1593,32 @@ jobs:
                   completionHandler()
               }
           }
-          class NotificationBridge: NSObject, WKScriptMessageHandler {
+          class NotificationBridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
               weak var webView: WKWebView?
+              func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+                  if let url = navigationAction.request.url, let scheme = url.scheme?.lowercased(), ["tel", "sms", "mailto"].contains(scheme) {
+                      UIApplication.shared.open(url, options: [:], completionHandler: nil)
+                      decisionHandler(.cancel)
+                      return
+                  }
+                  decisionHandler(.allow)
+              }
               func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
                   guard let dict = message.body as? [String: Any], let action = dict["action"] as? String else { return }
-                  if action == "testNotification" {
-                      scheduleTestBanner()
-                  } else if action == "syncNotifications" {
+                  if action == "syncNotifications" {
                       syncAllAppointments(dict)
                   } else if action == "setTheme" {
                       let isDark = dict["isDark"] as? Bool ?? false
                       DispatchQueue.main.async {
                           UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap { $0.windows }.forEach { $0.overrideUserInterfaceStyle = isDark ? .dark : .light }
                       }
+                  } else if action == "callPhone" {
+                      if let phone = dict["phone"] as? String, let url = URL(string: "tel://\(phone)") {
+                          DispatchQueue.main.async {
+                              UIApplication.shared.open(url, options: [:], completionHandler: nil)
+                          }
+                      }
                   }
-              }
-              private func scheduleTestBanner() {
-                  let content = UNMutableNotificationContent()
-                  content.title = "🔔 ĐẾN GIỜ HẸN KHÁCH (Kim Ngân Studio)"
-                  content.body = "Chuông báo màn hình khoá và báo đúng giờ đã hoạt động!"
-                  content.sound = .default
-                  if #available(iOS 15.0, *) { content.interruptionLevel = .timeSensitive }
-                  let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
-                  let req = UNNotificationRequest(identifier: "test-banner-\(UUID().uuidString)", content: content, trigger: trigger)
-                  UNUserNotificationCenter.current().add(req)
               }
               private func syncAllAppointments(_ dict: [String: Any]) {
                   let center = UNUserNotificationCenter.current()
@@ -1555,6 +1641,11 @@ jobs:
                   for item in list {
                       guard let id = item["id"] as? String, let dateStr = item["date"] as? String, let timeStr = item["time"] as? String, let name = item["customerName"] as? String, let service = item["service"] as? String else { continue }
                       let note = item["note"] as? String ?? ""
+                      let locType = item["locationType"] as? String ?? "studio"
+                      let address = item["address"] as? String ?? ""
+                      let locText = locType == "home" ? "🛵 Đến nhà khách" : "🏠 Tại tiệm"
+                      let addrSuffix = (locType == "home" && !address.isEmpty) ? " • Đ/c: \(address)" : ""
+                      let noteSuffix = note.isEmpty ? "" : " — \(note)"
                       groupedByDate[dateStr, default: []].append(item)
                       var exactSec: Double = 0
                       if let ms = item["exactTimestampMs"] as? Double {
@@ -1568,8 +1659,8 @@ jobs:
                           let diffRemind = diffExact - Double(remindBefore * 60)
                           if diffRemind > 2 {
                               let content = UNMutableNotificationContent()
-                              content.title = "⏳ \(remindBefore) phút nữa có khách (\(timeStr))"
-                              content.body = "\(name) • \(service)" + (note.isEmpty ? "" : " — \(note)")
+                              content.title = "⏳ \(remindBefore)p nữa (\(timeStr)) • [\(locText)]"
+                              content.body = "\(name) • \(service)\(addrSuffix)\(noteSuffix)"
                               content.sound = .default
                               if #available(iOS 15.0, *) { content.interruptionLevel = .timeSensitive }
                               let trigger = UNTimeIntervalNotificationTrigger(timeInterval: diffRemind, repeats: false)
@@ -1579,16 +1670,16 @@ jobs:
                       if enableExact {
                           if diffExact > 2 {
                               let contentExact = UNMutableNotificationContent()
-                              contentExact.title = "🔔 ĐẾN GIỜ LÀM KHÁCH (\(timeStr))"
-                              contentExact.body = "\(name) • \(service) đã tới giờ hẹn!" + (note.isEmpty ? "" : " (\(note))")
+                              contentExact.title = "🔔 ĐẾN GIỜ LÀM (\(timeStr)) • [\(locText)]"
+                              contentExact.body = "\(name) • \(service) đã tới giờ hẹn!\(addrSuffix)\(noteSuffix)"
                               contentExact.sound = .default
                               if #available(iOS 15.0, *) { contentExact.interruptionLevel = .timeSensitive }
                               let triggerExact = UNTimeIntervalNotificationTrigger(timeInterval: diffExact, repeats: false)
                               center.add(UNNotificationRequest(identifier: "apt-exact-\(id)", content: contentExact, trigger: triggerExact))
                           } else if diffExact >= -55 && diffExact <= 2 {
                               let contentNow = UNMutableNotificationContent()
-                              contentNow.title = "🔔 ĐẾN GIỜ LÀM KHÁCH (\(timeStr))"
-                              contentNow.body = "\(name) • \(service) đã tới giờ hẹn!" + (note.isEmpty ? "" : " (\(note))")
+                              contentNow.title = "🔔 ĐẾN GIỜ LÀM (\(timeStr)) • [\(locText)]"
+                              contentNow.body = "\(name) • \(service) đã tới giờ hẹn!\(addrSuffix)\(noteSuffix)"
                               contentNow.sound = .default
                               if #available(iOS 15.0, *) { contentNow.interruptionLevel = .timeSensitive }
                               let triggerNow = UNTimeIntervalNotificationTrigger(timeInterval: 3, repeats: false)
@@ -1604,7 +1695,10 @@ jobs:
                           comps.minute = summaryMinute
                           if let fireDate = calendar.date(from: comps), fireDate.timeIntervalSince1970 > nowSec {
                               let sorted = items.sorted { ($0["time"] as? String ?? "") < ($1["time"] as? String ?? "") }
-                              let lines = sorted.map { "\($0["time"] ?? "") • \($0["customerName"] ?? "") (\($0["service"] ?? ""))" }
+                              let lines = sorted.map { item -> String in
+                                  let loc = (item["locationType"] as? String) == "home" ? "🛵Tận nhà" : "🏠Tiệm"
+                                  return "\(item["time"] ?? "") • \(item["customerName"] ?? "") (\(item["service"] ?? "") - \(loc))"
+                              }
                               let content = UNMutableNotificationContent()
                               content.title = "📅 Ngày mai có \(items.count) khách đặt lịch"
                               content.body = lines.joined(separator: "\n")
@@ -1635,6 +1729,7 @@ jobs:
                   config.userContentController.add(context.coordinator, name: "iosNotify")
                   let webView = WKWebView(frame: .zero, configuration: config)
                   context.coordinator.webView = webView
+                  webView.navigationDelegate = context.coordinator
                   webView.scrollView.bounces = false
                   webView.isOpaque = false
                   webView.backgroundColor = UIColor(red: 0.07, green: 0.05, blue: 0.05, alpha: 1.0)
