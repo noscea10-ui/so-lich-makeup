@@ -12,47 +12,121 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Tools (XcodeGen & Pillow)
+      - name: Install XcodeGen
         run: |
-          brew install xcodegen
-          pip3 install pillow
+          if ! command -v xcodegen &> /dev/null; then
+            brew install xcodegen || (
+              curl -sL https://github.com/yonaskolb/XcodeGen/releases/latest/download/xcodegen.zip -o xcodegen.zip &&
+              unzip -q xcodegen.zip &&
+              sudo mkdir -p /usr/local/bin &&
+              sudo cp xcodegen/bin/xcodegen /usr/local/bin/xcodegen
+            )
+          fi
 
-      - name: Prepare Cover Image & App Icon
+      - name: Prepare Cover Image & App Icon (Native macOS)
         run: |
-          export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
-          mkdir -p AppSource/Assets.xcassets/AppIcon.appiconset
+          mkdir -p AppSource
+          mkdir -p Assets.xcassets/AppIcon.appiconset
 
-          python3 - << 'PYEOF'
-          import os
-          from PIL import Image, ImageFilter
+          swift - << 'SWIFTEOF'
+          import AppKit
 
-          candidates = [f for f in os.listdir('.') if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
-          if candidates:
-              src = 'cover.png' if 'cover.png' in candidates else candidates[0]
-              im = Image.open(src).convert('RGB')
-              w, h = im.size
-              # Xoá vùng logo CapCut ở góc trên bên phải
-              wm_x0 = int(w * 0.68)
-              wm_y1 = int(h * 0.08)
-              patch_box = (max(0, wm_x0 - int(w * 0.25)), 0, wm_x0, wm_y1)
-              patch = im.crop(patch_box).resize((w - wm_x0, wm_y1))
-              patch = patch.filter(ImageFilter.GaussianBlur(radius=6))
-              im.paste(patch, (wm_x0, 0))
-              im.save('AppSource/cover.png', 'PNG')
+          let fm = FileManager.default
+          let files = (try? fm.contentsOfDirectory(atPath: ".")) ?? []
+          let imgExts = ["png", "jpg", "jpeg"]
+          let candidates = files.filter { f in
+              let ext = (f as NSString).pathExtension.lowercased()
+              return imgExts.contains(ext) && !f.hasPrefix(".")
+          }
 
-              # Cắt vuông làm Icon App 1024x1024
-              side = min(w, h)
-              left = (w - side) // 2
-              top = int((h - side) * 0.22)
-              icon = im.crop((left, top, left + side, top + side)).resize((1024, 1024), Image.LANCZOS)
-              icon.save('AppSource/Assets.xcassets/AppIcon.appiconset/icon_1024.png', 'PNG')
-          else:
-              fallback = Image.new('RGB', (1024, 1024), (35, 25, 23))
-              fallback.save('AppSource/cover.png', 'PNG')
-              fallback.save('AppSource/Assets.xcassets/AppIcon.appiconset/icon_1024.png', 'PNG')
-          PYEOF
+          let chosen = candidates.contains("cover.png") ? "cover.png" : candidates.first
 
-          cat << 'EOF' > AppSource/Assets.xcassets/AppIcon.appiconset/Contents.json
+          func savePNG(_ image: NSImage, to path: String, pixelWidth: Int, pixelHeight: Int) {
+              guard let rep = NSBitmapImageRep(
+                  bitmapDataPlanes: nil,
+                  pixelsWide: pixelWidth,
+                  pixelsHigh: pixelHeight,
+                  bitsPerSample: 8,
+                  samplesPerPixel: 4,
+                  hasAlpha: true,
+                  isPlanar: false,
+                  colorSpaceName: .deviceRGB,
+                  bytesPerRow: 0,
+                  bitsPerPixel: 0
+              ) else { return }
+              rep.size = NSSize(width: pixelWidth, height: pixelHeight)
+              NSGraphicsContext.saveGraphicsState()
+              NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+              NSGraphicsContext.current?.imageInterpolation = .high
+              image.draw(in: NSRect(x: 0, y: 0, width: pixelWidth, height: pixelHeight),
+                         from: NSRect(origin: .zero, size: image.size),
+                         operation: .copy,
+                         fraction: 1.0)
+              NSGraphicsContext.restoreGraphicsState()
+              if let data = rep.representation(using: .png, properties: [:]) {
+                  try? data.write(to: URL(fileURLWithPath: path))
+              }
+          }
+
+          if let srcName = chosen, let srcImage = NSImage(contentsOfFile: srcName),
+             let tiff = srcImage.tiffRepresentation, let bitmap = NSBitmapImageRep(data: tiff) {
+              let w = bitmap.pixelsWide
+              let h = bitmap.pixelsHigh
+              let size = NSSize(width: w, height: h)
+
+              // 1. Xoá logo CapCut ở góc trên bên phải bằng vùng nền lân cận
+              let cleaned = NSImage(size: size)
+              cleaned.lockFocus()
+              srcImage.draw(in: NSRect(origin: .zero, size: size))
+
+              let wmX = CGFloat(w) * 0.68
+              let wmW = CGFloat(w) - wmX
+              let wmY = CGFloat(h) * 0.92
+              let wmH = CGFloat(h) - wmY
+
+              let sampleRect = NSRect(x: max(0, wmX - wmW), y: wmY, width: wmW, height: wmH)
+              let targetRect = NSRect(x: wmX, y: wmY, width: wmW, height: wmH)
+              srcImage.draw(in: targetRect, from: sampleRect, operation: .copy, fraction: 1.0)
+              cleaned.unlockFocus()
+
+              savePNG(cleaned, to: "AppSource/cover.png", pixelWidth: w, pixelHeight: h)
+
+              // 2. Cắt vuông trung tâm khuôn mặt làm Icon App 1024x1024
+              let side = min(w, h)
+              let cropX = (w - side) / 2
+              let cropY = Int(Double(h - side) * 0.78)
+              let iconImg = NSImage(size: NSSize(width: 1024, height: 1024))
+              iconImg.lockFocus()
+              cleaned.draw(in: NSRect(x: 0, y: 0, width: 1024, height: 1024),
+                           from: NSRect(x: cropX, y: cropY, width: side, height: side),
+                           operation: .copy,
+                           fraction: 1.0)
+              iconImg.unlockFocus()
+
+              savePNG(iconImg, to: "Assets.xcassets/AppIcon.appiconset/icon_1024.png", pixelWidth: 1024, pixelHeight: 1024)
+              print("Da xu ly xong anh bia & icon tu: \(srcName)")
+          } else {
+              let fallback = NSImage(size: NSSize(width: 1024, height: 1024))
+              fallback.lockFocus()
+              NSColor(red: 0.14, green: 0.10, blue: 0.09, alpha: 1.0).setFill()
+              NSRect(x: 0, y: 0, width: 1024, height: 1024).fill()
+              fallback.unlockFocus()
+              savePNG(fallback, to: "AppSource/cover.png", pixelWidth: 1024, pixelHeight: 1024)
+              savePNG(fallback, to: "Assets.xcassets/AppIcon.appiconset/icon_1024.png", pixelWidth: 1024, pixelHeight: 1024)
+              print("Tao anh bia & icon mac dinh")
+          }
+          SWIFTEOF
+
+          cat << 'EOF' > Assets.xcassets/Contents.json
+          {
+            "info" : {
+              "author" : "xcode",
+              "version" : 1
+            }
+          }
+          EOF
+
+          cat << 'EOF' > Assets.xcassets/AppIcon.appiconset/Contents.json
           {
             "images" : [
               {
@@ -69,10 +143,14 @@ jobs:
           }
           EOF
 
-      - name: Generate Native iOS Project with Background Lock-Screen Notifications
+      - name: Generate Native iOS Project
         run: |
           export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
           HTML_FILE=$(find . -maxdepth 1 -name "*.html" | head -n 1)
+          if [ -z "$HTML_FILE" ]; then
+            echo "Khong tim thay file index.html!"
+            exit 1
+          fi
           cp "$HTML_FILE" AppSource/index.html
 
           cat << 'EOF' > AppSource/App.swift
@@ -80,15 +158,15 @@ jobs:
           import WebKit
           import UserNotifications
 
-          class NotificationBridge: NSObject, WKScriptMessageHandler, UNUserNotificationCenterDelegate {
-              override init() {
-                  super.init()
+          class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+              func application(_ application: UIApplication,
+                               didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
                   let center = UNUserNotificationCenter.current()
                   center.delegate = self
                   center.requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
+                  return true
               }
 
-              // Hiển thị popup biểu ngữ + âm thanh ngay cả khi đang mở app
               func userNotificationCenter(_ center: UNUserNotificationCenter,
                                           willPresent notification: UNNotification,
                                           withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
@@ -100,7 +178,9 @@ jobs:
                                           withCompletionHandler completionHandler: @escaping () -> Void) {
                   completionHandler()
               }
+          }
 
+          class NotificationBridge: NSObject, WKScriptMessageHandler {
               func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
                   guard let dict = message.body as? [String: Any],
                         let action = dict["action"] as? String else { return }
@@ -133,7 +213,6 @@ jobs:
                   let remindBefore = dict["remindBeforeMinutes"] as? Int ?? 30
                   let enableSummary = dict["enableDailySummary"] as? Bool ?? true
 
-                  // Khoá chuẩn POSIX để không bị lỗi trên iPhone dùng đồng hồ 12h (SA/CH)
                   let posixLocale = Locale(identifier: "en_US_POSIX")
 
                   let formatter = DateFormatter()
@@ -150,7 +229,6 @@ jobs:
                   let now = Date()
                   var groupedByDate: [String: [[String: Any]]] = [:]
 
-                  // 1. Lên lịch popup nhắc trước giờ hẹn (mặc định 30 phút)
                   for item in list {
                       guard let id = item["id"] as? String,
                             let dateStr = item["date"] as? String,
@@ -177,7 +255,6 @@ jobs:
                       }
                   }
 
-                  // 2. Lên lịch popup tổng hợp khách ngày mai vào buổi tối hôm trước
                   if enableSummary {
                       for (dateStr, items) in groupedByDate {
                           guard let targetDay = dayFormatter.date(from: dateStr),
@@ -206,7 +283,9 @@ jobs:
           }
 
           struct WebViewContainer: UIViewRepresentable {
-              let bridge = NotificationBridge()
+              func makeCoordinator() -> NotificationBridge {
+                  NotificationBridge()
+              }
 
               func makeUIView(context: Context) -> WKWebView {
                   let config = WKWebViewConfiguration()
@@ -214,7 +293,7 @@ jobs:
                   config.defaultWebpagePreferences.allowsContentJavaScript = true
                   config.websiteDataStore = .default()
                   config.preferences.setValue(true, forKey: "allowFileAccessFromFileURLs")
-                  config.userContentController.add(bridge, name: "iosNotify")
+                  config.userContentController.add(context.coordinator, name: "iosNotify")
 
                   let webView = WKWebView(frame: .zero, configuration: config)
                   webView.scrollView.bounces = false
@@ -232,6 +311,8 @@ jobs:
 
           @main
           struct KimNganStudioApp: App {
+              @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
               var body: some Scene {
                   WindowGroup {
                       WebViewContainer()
@@ -254,6 +335,7 @@ jobs:
               platform: iOS
               sources:
                 - path: AppSource
+                - path: Assets.xcassets
               settings:
                 base:
                   PRODUCT_BUNDLE_IDENTIFIER: com.kent.kimnganstudio
@@ -289,6 +371,10 @@ jobs:
         run: |
           mkdir -p Payload
           APP_PATH=$(find build -name "KimNganStudio.app" -type d | head -n 1)
+          if [ ! -f "$APP_PATH/index.html" ]; then
+            echo "LOI: Khong tim thay index.html trong goi ung dung!"
+            exit 1
+          fi
           cp -r "$APP_PATH" Payload/
           zip -r KimNganStudio-Unsigned.ipa Payload
 
